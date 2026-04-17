@@ -17,7 +17,7 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;}
-.wrap{max-width:1280px;margin:0 auto;padding:36px 24px 60px;}
+.wrap{max-width:1280px;margin:0 auto;padding:36px 24px 60px;overflow-x:hidden;}
 
 /* 헤더 */
 .top-bar{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:32px;}
@@ -145,25 +145,57 @@ h1 em{color:var(--blue);font-style:normal;}
 
 
 @media(max-width:860px){
-  .wrap{padding:20px 16px 48px;}
+  .wrap{padding:20px 16px 48px;overflow-x:hidden;}
   .stats-row{grid-template-columns:1fr 1fr;}
   .two-col{grid-template-columns:1fr!important;align-items:start!important;}
   .scatter-layout{grid-template-columns:1fr;}
   .perf-grid{grid-template-columns:1fr 1fr!important;}
 
-  /* 모바일: stretch 비활성화 - 카드가 늘어나지 않게 */
+  /* 모바일: stretch 비활성화 */
   .col-stretch > .card{flex:none!important;height:auto!important;}
-  .col-stretch{display:block!important;}
+  .col-stretch{display:block!important;width:100%!important;}
 
-  /* 월별 수익 현황 - 가로 스크롤로 높이 제한 */
-  .monthly-card{overflow-x:auto!important;padding-bottom:12px!important;}
-  .month-bars{min-width:600px;width:600px!important;}
-  #monthBars{height:120px!important;min-width:600px;width:600px!important;}
-  #monthLegend{min-width:300px;}
+  /* 월별 수익 현황 - 박스는 화면 폭, 내부 차트만 가로 스크롤 */
+  .monthly-card{
+    width:100%!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+    padding:16px!important;
+    overflow:hidden!important;
+  }
+  .monthly-card-scroll{
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  .month-bars{
+    min-width:560px!important;
+    height:110px!important;
+  }
+  #monthBars{
+    min-width:560px!important;
+    height:110px!important;
+  }
+  #monthLegend{
+    min-width:0!important;
+    flex-wrap:wrap!important;
+    font-size:11px!important;
+  }
 
-  /* 주간 수입 현황 - 여백 줄이기 */
-  .weekly-card{overflow-x:auto!important;padding:12px!important;}
-  #weeklyMonthTabs{margin-bottom:10px!important;}
+  /* 주간 수입 현황 - 박스는 화면 폭, 내부 테이블만 가로 스크롤 */
+  .weekly-card{
+    width:100%!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+    padding:16px!important;
+    overflow:hidden!important;
+  }
+  .weekly-card > div[style*="overflow"]{
+    overflow-x:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  #weeklyMonthTabs{margin-bottom:10px!important;gap:4px!important;}
+  #weeklyTable{overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;}
 
   /* KPI 카드 sub 값 강제 표시 */
   .stat-sub2{display:flex!important;font-size:0!important;}
@@ -174,12 +206,13 @@ h1 em{color:var(--blue);font-style:normal;}
   .weekly-table-wrap{flex:none!important;}
 }
 @media(max-width:480px){
-  .wrap{padding:16px 12px 40px;}
+  .wrap{padding:16px 12px 40px;overflow-x:hidden;}
   .stats-row{grid-template-columns:1fr 1fr;}
   .perf-grid{grid-template-columns:1fr!important;}
-  .card{padding:18px 14px;}
+  .card{padding:16px 12px;}
   .stat-card{padding:14px 12px;}
-  #monthBars{height:100px!important;}
+  #monthBars{min-width:520px!important;height:100px!important;}
+  .month-bars{min-width:520px!important;height:100px!important;}
 }
 </style>
 </head>
@@ -265,7 +298,9 @@ h1 em{color:var(--blue);font-style:normal;}
       <div class="sec-label">01 · Monthly Revenue</div>
       <div class="sec-title">월별 수익 현황</div>
       <div class="card monthly-card">
-        <div class="month-bars" id="monthBars" style="height:200px;"></div>
+        <div class="monthly-card-scroll">
+          <div class="month-bars" id="monthBars" style="height:200px;"></div>
+        </div>
         <div class="legend" id="monthLegend" style="margin-top:16px;">
           <div class="leg-item"><div class="leg-dot" style="background:#00a86b"></div>핸들러 수입</div>
           <div class="leg-item"><div class="leg-dot" style="background:#2b7fff"></div>무버스 수입</div>
