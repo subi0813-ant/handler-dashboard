@@ -16,8 +16,9 @@
   --text:#1a1d2e; --muted:#7a7f99; --dimmer:#c8cce0;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;}
-.wrap{max-width:1280px;margin:0 auto;padding:36px 24px 60px;overflow-x:hidden;}
+html{overflow-x:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;overflow-x:hidden;}
+.wrap{max-width:1280px;margin:0 auto;padding:36px 24px 60px;}
 
 /* 헤더 */
 .top-bar{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:32px;}
@@ -145,57 +146,60 @@ h1 em{color:var(--blue);font-style:normal;}
 
 
 @media(max-width:860px){
-  .wrap{padding:20px 16px 48px;overflow-x:hidden;}
+  .wrap{padding:20px 16px 48px;}
   .stats-row{grid-template-columns:1fr 1fr;}
   .two-col{grid-template-columns:1fr!important;align-items:start!important;}
   .scatter-layout{grid-template-columns:1fr;}
   .perf-grid{grid-template-columns:1fr 1fr!important;}
 
-  /* 모바일: stretch 비활성화 */
+  /* 모바일: 카드 너비 화면에 맞추기 */
   .col-stretch > .card{flex:none!important;height:auto!important;}
-  .col-stretch{display:block!important;width:100%!important;}
+  .col-stretch{display:block!important;width:100%!important;box-sizing:border-box!important;}
 
-  /* 월별 수익 현황 - 박스는 화면 폭, 내부 차트만 가로 스크롤 */
+  /* 월별 수익 현황 - 카드는 화면폭, 내부 스크롤 래퍼만 스크롤 */
   .monthly-card{
     width:100%!important;
-    max-width:100%!important;
     box-sizing:border-box!important;
+    overflow:visible!important;
     padding:16px!important;
-    overflow:hidden!important;
   }
   .monthly-card-scroll{
     overflow-x:auto!important;
     overflow-y:hidden!important;
     -webkit-overflow-scrolling:touch!important;
+    width:100%!important;
   }
-  .month-bars{
-    min-width:560px!important;
+  .month-bars, #monthBars{
+    min-width:520px!important;
     height:110px!important;
-  }
-  #monthBars{
-    min-width:560px!important;
-    height:110px!important;
+    width:520px!important;
   }
   #monthLegend{
-    min-width:0!important;
     flex-wrap:wrap!important;
+    gap:6px!important;
     font-size:11px!important;
   }
 
-  /* 주간 수입 현황 - 박스는 화면 폭, 내부 테이블만 가로 스크롤 */
+  /* 주간 수입 현황 - 카드는 화면폭, 테이블만 스크롤 */
   .weekly-card{
     width:100%!important;
-    max-width:100%!important;
     box-sizing:border-box!important;
+    overflow:visible!important;
     padding:16px!important;
-    overflow:hidden!important;
   }
-  .weekly-card > div[style*="overflow"]{
+  #weeklyMonthTabs{
     overflow-x:auto!important;
     -webkit-overflow-scrolling:touch!important;
+    flex-wrap:nowrap!important;
+    margin-bottom:10px!important;
+    padding-bottom:4px!important;
   }
-  #weeklyMonthTabs{margin-bottom:10px!important;gap:4px!important;}
-  #weeklyTable{overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;}
+  #weeklyTable{
+    overflow-x:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    display:block!important;
+    width:100%!important;
+  }
 
   /* KPI 카드 sub 값 강제 표시 */
   .stat-sub2{display:flex!important;font-size:0!important;}
@@ -206,13 +210,12 @@ h1 em{color:var(--blue);font-style:normal;}
   .weekly-table-wrap{flex:none!important;}
 }
 @media(max-width:480px){
-  .wrap{padding:16px 12px 40px;overflow-x:hidden;}
+  .wrap{padding:16px 12px 40px;}
   .stats-row{grid-template-columns:1fr 1fr;}
   .perf-grid{grid-template-columns:1fr!important;}
   .card{padding:16px 12px;}
   .stat-card{padding:14px 12px;}
-  #monthBars{min-width:520px!important;height:100px!important;}
-  .month-bars{min-width:520px!important;height:100px!important;}
+  .month-bars, #monthBars{min-width:480px!important;height:100px!important;width:480px!important;}
 }
 </style>
 </head>
@@ -1193,7 +1196,7 @@ function renderWeeklyTable(month, routes) {
   const ordinal = ['1주', '2주', '3주', '4주', '5주'];
 
   // 테이블 헤더
-  let html = `<table style="width:100%;border-collapse:collapse;font-size:15px;">
+  let html = `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table style="width:100%;min-width:400px;border-collapse:collapse;font-size:15px;">
     <thead>
       <tr>
         <th style="text-align:left;padding:10px 12px;color:var(--muted);font-size:13px;font-weight:600;border-bottom:2px solid var(--border);">구분</th>`;
@@ -1237,7 +1240,7 @@ function renderWeeklyTable(month, routes) {
   const grandTotal = hTotal + mTotal;
   html += `<td style="text-align:right;padding:12px 12px;font-family:'DM Mono',monospace;font-size:16px;font-weight:900;">${grandTotal.toLocaleString()}</td></tr>`;
 
-  html += `</tbody></table>`;
+  html += `</tbody></table></div>`;
   el.innerHTML = html;
 }
 
