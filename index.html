@@ -16,8 +16,8 @@
   --text:#1a1d2e; --muted:#7a7f99; --dimmer:#c8cce0;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-html{overflow-x:hidden;}
-body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;overflow-x:hidden;}
+html{}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;}
 .wrap{max-width:1280px;margin:0 auto;padding:36px 24px 60px;}
 
 /* 헤더 */
@@ -148,7 +148,7 @@ h1 em{color:var(--blue);font-style:normal;}
 
 
 @media(max-width:860px){
-  html, body { overflow-x:hidden!important; }
+  html, body { }
   .wrap{padding:20px 16px 48px; max-width:100vw; box-sizing:border-box;}
   .stats-row{grid-template-columns:1fr 1fr;}
   .two-col{grid-template-columns:1fr!important; align-items:start!important; max-width:100%!important;}
