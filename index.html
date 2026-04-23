@@ -159,18 +159,25 @@ h1 em{color:var(--blue);font-style:normal;}
   .col-stretch > .card{flex:none!important; height:auto!important;}
   .col-stretch{display:block!important; width:100%!important; box-sizing:border-box!important;}
 
+  /* two-col 모바일 */
+  .two-col{overflow:visible!important;}
+  .col-stretch{overflow:visible!important;}
+
   /* 월별 수익 현황 */
   .monthly-card{
     width:100%!important;
     box-sizing:border-box!important;
     padding:14px!important;
+    overflow:hidden!important;
   }
   .monthly-card-scroll{
     overflow-x:auto!important;
     -webkit-overflow-scrolling:touch!important;
+    width:100%!important;
   }
   #monthBars{
     height:110px!important;
+    min-width:560px!important;
   }
   #monthLegend{
     flex-wrap:wrap!important;
@@ -184,6 +191,7 @@ h1 em{color:var(--blue);font-style:normal;}
     width:100%!important;
     box-sizing:border-box!important;
     padding:14px!important;
+    overflow:hidden!important;
   }
   #weeklyMonthTabs{
     flex-wrap:nowrap!important;
