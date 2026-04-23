@@ -195,10 +195,11 @@ h1 em{color:var(--blue);font-style:normal;}
     padding-bottom:4px!important;
   }
   #weeklyTable{
-    overflow-x:auto!important;
+    overflow:auto!important;
     -webkit-overflow-scrolling:touch!important;
     display:block!important;
     width:100%!important;
+    max-height:280px!important;
   }
 
   /* KPI 카드 sub 값 강제 표시 */
@@ -318,7 +319,7 @@ h1 em{color:var(--blue);font-style:normal;}
       <div class="sec-title">주간 수입 현황</div>
       <div class="card weekly-card">
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;" id="weeklyMonthTabs"></div>
-        <div id="weeklyTable"></div>
+        <div style="overflow:auto;-webkit-overflow-scrolling:touch;" id="weeklyTable"></div>
       </div>
     </div>
   </div>
@@ -679,11 +680,17 @@ function renderLocList(routes) {
     el.innerHTML='';
     top.forEach(([name,cnt],i)=>{
       const pct=Math.round((cnt/maxCnt)*100);
+      // 횟수 비율에 따라 배경 불투명도 조절 (최소 15%, 최대 70%)
+      const opacity = Math.round(15 + (pct/100) * 55);
+      const hex = opacity.toString(16).padStart(2,'0');
       el.innerHTML+=`<div class="loc-item">
         <span class="loc-rank">${i+1}</span>
         <div class="loc-bar-wrap">
-          <div class="loc-bar" style="width:${Math.max(pct,100)}%;background:${color}18;border-left:3px solid ${color}">
-            <span class="loc-name" style="color:${color};white-space:nowrap;">${name}</span>
+          <div style="width:100%;height:32px;background:#f0f0f0;border-radius:4px;overflow:hidden;position:relative;">
+            <div style="width:${pct}%;height:100%;background:${color};opacity:0.7;border-radius:4px;"></div>
+            <div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;padding:0 10px;box-sizing:border-box;">
+              <span style="color:#1a1a1a;font-weight:700;font-size:13px;white-space:nowrap;">${name}</span>
+            </div>
           </div>
         </div>
         <span class="loc-cnt">${cnt}회</span>
@@ -1196,49 +1203,49 @@ function renderWeeklyTable(month, routes) {
   const ordinal = ['1주', '2주', '3주', '4주', '5주'];
 
   // 테이블 헤더
-  let html = `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table style="width:100%;min-width:400px;border-collapse:collapse;font-size:15px;">
+  let html = `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table style="width:100%;min-width:400px;border-collapse:collapse;font-size:14px;table-layout:auto;">
     <thead>
       <tr>
-        <th style="text-align:left;padding:10px 12px;color:var(--muted);font-size:13px;font-weight:600;border-bottom:2px solid var(--border);">구분</th>`;
+        <th style="text-align:left;padding:10px 10px;color:var(--muted);font-size:12px;font-weight:600;border-bottom:2px solid var(--border);white-space:nowrap;min-width:60px;">구분</th>`;
 
   weeks.forEach((w, i) => {
     const sun = new Date(w.monday);
     sun.setDate(sun.getDate() + 6);
-    html += `<th style="text-align:right;padding:10px 10px;color:var(--muted);font-size:13px;font-weight:600;border-bottom:2px solid var(--border);">
-      <div style="color:var(--text);font-weight:700;font-size:14px;">${ordinal[i] || (i+1)+'주'}</div>
-      <div style="font-size:11px;font-weight:400;">${fmtMD(w.monday)}~${fmtMD(sun)}</div>
+    html += `<th style="text-align:right;padding:10px 8px;color:var(--muted);font-size:12px;font-weight:600;border-bottom:2px solid var(--border);white-space:nowrap;min-width:70px;">
+      <div style="color:var(--text);font-weight:700;font-size:13px;">${ordinal[i] || (i+1)+'주'}</div>
+      <div style="font-size:10px;font-weight:400;">${fmtMD(w.monday)}~${fmtMD(sun)}</div>
     </th>`;
   });
-  html += `<th style="text-align:right;padding:10px 12px;color:var(--muted);font-size:13px;font-weight:600;border-bottom:2px solid var(--border);">합계</th>
+  html += `<th style="text-align:right;padding:10px 10px;color:var(--muted);font-size:12px;font-weight:600;border-bottom:2px solid var(--border);white-space:nowrap;min-width:70px;">합계</th>
     </tr></thead><tbody>`;
 
   // 핸들러 행
   const hTotal = weeks.reduce((s,w) => s+w.h, 0);
   html += `<tr style="border-bottom:1px solid var(--border);">
-    <td style="padding:12px 12px;"><span style="font-size:13px;font-weight:700;background:#e8f5ee;color:#00a86b;padding:3px 8px;border-radius:4px;">핸들러</span></td>`;
+    <td style="padding:10px 10px;white-space:nowrap;"><span style="font-size:12px;font-weight:700;background:#e8f5ee;color:#00a86b;padding:3px 8px;border-radius:4px;">핸들러</span></td>`;
   weeks.forEach(w => {
-    html += `<td style="text-align:right;padding:12px 10px;font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:#00a86b;">${w.h > 0 ? w.h.toLocaleString() : '—'}</td>`;
+    html += `<td style="text-align:right;padding:10px 8px;font-family:'DM Mono',monospace;font-size:14px;font-weight:600;color:#00a86b;white-space:nowrap;">${w.h > 0 ? w.h.toLocaleString() : '—'}</td>`;
   });
-  html += `<td style="text-align:right;padding:12px 12px;font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:#00a86b;">${hTotal.toLocaleString()}</td></tr>`;
+  html += `<td style="text-align:right;padding:10px 10px;font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#00a86b;white-space:nowrap;">${hTotal.toLocaleString()}</td></tr>`;
 
   // 무버스 행
   const mTotal = weeks.reduce((s,w) => s+w.m, 0);
   html += `<tr style="border-bottom:1px solid var(--border);">
-    <td style="padding:12px 12px;"><span style="font-size:13px;font-weight:700;background:#eef2ff;color:#2b7fff;padding:3px 8px;border-radius:4px;">무버스</span></td>`;
+    <td style="padding:10px 10px;white-space:nowrap;"><span style="font-size:12px;font-weight:700;background:#eef2ff;color:#2b7fff;padding:3px 8px;border-radius:4px;">무버스</span></td>`;
   weeks.forEach(w => {
-    html += `<td style="text-align:right;padding:12px 10px;font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:#2b7fff;">${w.m > 0 ? w.m.toLocaleString() : '—'}</td>`;
+    html += `<td style="text-align:right;padding:10px 8px;font-family:'DM Mono',monospace;font-size:14px;font-weight:600;color:#2b7fff;white-space:nowrap;">${w.m > 0 ? w.m.toLocaleString() : '—'}</td>`;
   });
-  html += `<td style="text-align:right;padding:12px 12px;font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:#2b7fff;">${mTotal.toLocaleString()}</td></tr>`;
+  html += `<td style="text-align:right;padding:10px 10px;font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#2b7fff;white-space:nowrap;">${mTotal.toLocaleString()}</td></tr>`;
 
   // 합계 행
   html += `<tr style="background:var(--surface2);">
-    <td style="padding:12px 12px;font-weight:700;font-size:14px;">합계</td>`;
+    <td style="padding:10px 10px;font-weight:700;font-size:13px;white-space:nowrap;">합계</td>`;
   weeks.forEach(w => {
     const tot = w.h + w.m;
-    html += `<td style="text-align:right;padding:12px 10px;font-family:'DM Mono',monospace;font-size:15px;font-weight:700;">${tot > 0 ? tot.toLocaleString() : '—'}</td>`;
+    html += `<td style="text-align:right;padding:10px 8px;font-family:'DM Mono',monospace;font-size:14px;font-weight:700;white-space:nowrap;">${tot > 0 ? tot.toLocaleString() : '—'}</td>`;
   });
   const grandTotal = hTotal + mTotal;
-  html += `<td style="text-align:right;padding:12px 12px;font-family:'DM Mono',monospace;font-size:16px;font-weight:900;">${grandTotal.toLocaleString()}</td></tr>`;
+  html += `<td style="text-align:right;padding:10px 10px;font-family:'DM Mono',monospace;font-size:15px;font-weight:900;white-space:nowrap;">${grandTotal.toLocaleString()}</td></tr>`;
 
   html += `</tbody></table></div>`;
   el.innerHTML = html;
