@@ -246,6 +246,22 @@ h1 em{color:var(--blue);font-style:normal;}
   </div>
 
   <!-- 요약 -->
+  <!-- 오늘/어제 수입 카드 -->
+  <div class="stats-row" style="margin-bottom:14px;">
+    <div class="stat-card" style="border-color:#00a86b;grid-column:span 2;">
+      <div class="stat-lbl">오늘 수입</div>
+      <div class="stat-val-row"><span class="stat-val" id="d-today-fare" style="color:#00a86b;">—</span><span class="stat-unit">원</span><span style="font-size:12px;color:var(--muted);margin-left:8px;" id="d-today-count">— 건</span></div>
+      <div class="stat-sub2"><span class="sub-label handler-color">핸들러</span><div class="sub-val"><span id="d-today-h">—</span><span class="stat-unit2">원</span></div><span style="font-size:11px;color:var(--muted);margin-left:6px;" id="d-today-hc">— 건</span></div>
+      <div class="stat-sub2"><span class="sub-label mover-color">무버스</span><div class="sub-val"><span id="d-today-m">—</span><span class="stat-unit2">원</span></div><span style="font-size:11px;color:var(--muted);margin-left:6px;" id="d-today-mc">— 건</span></div>
+    </div>
+    <div class="stat-card" style="border-color:#7a7f99;grid-column:span 2;">
+      <div class="stat-lbl">어제 수입</div>
+      <div class="stat-val-row"><span class="stat-val" id="d-yes-fare" style="color:#7a7f99;">—</span><span class="stat-unit">원</span><span style="font-size:12px;color:var(--muted);margin-left:8px;" id="d-yes-count">— 건</span></div>
+      <div class="stat-sub2"><span class="sub-label handler-color">핸들러</span><div class="sub-val"><span id="d-yes-h">—</span><span class="stat-unit2">원</span></div><span style="font-size:11px;color:var(--muted);margin-left:6px;" id="d-yes-hc">— 건</span></div>
+      <div class="stat-sub2"><span class="sub-label mover-color">무버스</span><div class="sub-val"><span id="d-yes-m">—</span><span class="stat-unit2">원</span></div><span style="font-size:11px;color:var(--muted);margin-left:6px;" id="d-yes-mc">— 건</span></div>
+    </div>
+  </div>
+
   <div class="stats-row">
     <div class="stat-card">
       <div class="stat-lbl">총 수입</div>
@@ -560,6 +576,47 @@ function setStatus(type, text) {
       `마지막 업데이트 ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
   }
   document.getElementById('btnRefresh').disabled=(type==='loading');
+}
+
+function renderDailyStats(routes) {
+  const now = new Date();
+  const toStr = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const todayStr = toStr(now);
+  const yest = new Date(now); yest.setDate(yest.getDate()-1);
+  const yestStr = toStr(yest);
+
+  function calcDay(dateStr) {
+    const r = routes.filter(r => {
+      const d = parseRouteDate(r.date);
+      if (!d) return false;
+      return toStr(d) === dateStr;
+    });
+    const h = r.filter(x => x.type === '핸들러');
+    const m = r.filter(x => x.type === '무버스');
+    return {
+      total: r.reduce((s,x)=>s+x.fare,0),
+      count: r.length,
+      hFare: h.reduce((s,x)=>s+x.fare,0), hCount: h.length,
+      mFare: m.reduce((s,x)=>s+x.fare,0), mCount: m.length,
+    };
+  }
+
+  const t = calcDay(todayStr);
+  const y = calcDay(yestStr);
+
+  document.getElementById('d-today-fare').textContent = t.total > 0 ? t.total.toLocaleString() : '0';
+  document.getElementById('d-today-count').textContent = `${t.count} 건`;
+  document.getElementById('d-today-h').textContent = t.hFare > 0 ? t.hFare.toLocaleString() : '0';
+  document.getElementById('d-today-hc').textContent = `${t.hCount} 건`;
+  document.getElementById('d-today-m').textContent = t.mFare > 0 ? t.mFare.toLocaleString() : '0';
+  document.getElementById('d-today-mc').textContent = `${t.mCount} 건`;
+
+  document.getElementById('d-yes-fare').textContent = y.total > 0 ? y.total.toLocaleString() : '0';
+  document.getElementById('d-yes-count').textContent = `${y.count} 건`;
+  document.getElementById('d-yes-h').textContent = y.hFare > 0 ? y.hFare.toLocaleString() : '0';
+  document.getElementById('d-yes-hc').textContent = `${y.hCount} 건`;
+  document.getElementById('d-yes-m').textContent = y.mFare > 0 ? y.mFare.toLocaleString() : '0';
+  document.getElementById('d-yes-mc').textContent = `${y.mCount} 건`;
 }
 
 function renderStats(routes) {
@@ -935,6 +992,7 @@ async function loadAll() {
     COORDS[addr] = [c.lat, c.lng];
   });
 
+  renderDailyStats(allRoutes);
   renderStats(allRoutes);
   renderMonthBars(allRoutes);
   renderLocList(allRoutes);
