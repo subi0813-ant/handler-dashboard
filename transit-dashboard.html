@@ -252,7 +252,7 @@
 
 <script>
 // ===================== 설정 =====================
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycbz5fTq5Fx4SqyDzQkC9qMW2Z4nt-dwj4KeLBrFc-tHDBTtgrRbPZX7QA6AA3wTjxlbn/exec';
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzJXCAgqb-ZqcmZfRaBDJ1Rf4wAlnXWt7Yw_AZPeJVyxB4kUZl8eRLVaDP4jmW93jOW/exec';
 
 
 let allData = [];
@@ -297,6 +297,7 @@ function processData(raw) {
       from:      r.from || '',
       fromTime:  r.fromTime || '',
       to:        r.to || '',
+      toTime:    r.toTime || '',
       fare:      r.fare || 0,
       route:     r.route || '',
       fromCoord: Array.isArray(r.fromCoord) ? r.fromCoord : null,
@@ -401,7 +402,7 @@ function renderTripList(trips) {
     <div class="trip-item ${typeClass(t.type)}" onclick="focusTrip(${i})">
       <div class="trip-num">${i+1}</div>
       <div class="trip-info">
-        <div class="trip-time">${t.fromTime || '—'} 승차</div>
+        <div class="trip-time">${t.fromTime || '—'} 승차${t.toTime ? ' → ' + t.toTime + ' 하차' : ''}</div>
         <div class="trip-route">${t.from} → ${t.to}</div>
         <div class="trip-meta">
           <span class="trip-tag">${t.route || t.type}</span>
