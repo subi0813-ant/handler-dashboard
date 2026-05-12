@@ -253,7 +253,7 @@
 <script>
 // ===================== 설정 =====================
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbykbxVjtaGumYkXK2aOSVYfReqbJNlRZCHnRc9IxIilW6c3bFsf3r8J32DBGMT_-37y/exec';
-const ODSAY_KEY = encodeURIComponent('uEAu63t+apv2RoZT49tU3g');
+const ODSAY_KEY = 'uEAu63t%2Bapv2RoZT49tU3g'; // + → %2B 수동 인코딩
 
 let allData = [];
 let transitMap = null;
@@ -376,7 +376,7 @@ function onDateChange() {
 function renderDate(dateStr) {
   const trips = allData.filter(r => r.dateStr === dateStr)
     .sort((a,b) => a.fromTime.localeCompare(b.fromTime));
-
+  console.log(`[renderDate] ${dateStr} → ${trips.length}건`, trips);
   renderTripList(trips);
   renderMap(trips);
 }
@@ -496,33 +496,44 @@ function searchStation(name, cb) {
 
   const cbName = 'odsay_st_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
   const script = document.createElement('script');
-  script.src = `https://api.odsay.com/v1/api/searchStation?apiKey=${ODSAY_KEY}&stationName=${encodeURIComponent(name)}&lang=0&output=json&callback=${cbName}`;
+  const url = `https://api.odsay.com/v1/api/searchStation?apiKey=${ODSAY_KEY}&stationName=${encodeURIComponent(name)}&lang=0&output=json&callback=${cbName}`;
+  console.log(`[ODsay] 정류장 검색: "${name}"`, url);
+  script.src = url;
   let done = false;
 
   window[cbName] = function(data) {
     if (done) return; done = true;
     delete window[cbName];
     if (script.parentNode) script.parentNode.removeChild(script);
+    console.log(`[ODsay] "${name}" 응답:`, JSON.stringify(data).substring(0, 300));
     try {
-      // ODsay 응답: data.result.station 배열
       const stations = data?.result?.station;
       if (stations && stations.length > 0) {
-        // 광주 지역(x: 126.x, y: 35.x) 우선 선택
         const gwangju = stations.find(s => {
           const x = parseFloat(s.x), y = parseFloat(s.y);
           return x >= 126.7 && x <= 127.1 && y >= 35.0 && y <= 35.3;
         }) || stations[0];
+        console.log(`[ODsay] "${name}" 좌표:`, gwangju.y, gwangju.x);
         const coord = [parseFloat(gwangju.y), parseFloat(gwangju.x)];
         stationCache[name] = coord;
         cb(coord);
       } else {
+        console.warn(`[ODsay] "${name}" 결과 없음`);
         stationCache[name] = null;
         cb(null);
       }
-    } catch(e) { stationCache[name] = null; cb(null); }
+    } catch(e) { console.error(`[ODsay] "${name}" 오류:`, e); stationCache[name] = null; cb(null); }
   };
-  script.onerror = () => { if (!done) { done=true; stationCache[name]=null; cb(null); } };
-  setTimeout(() => { if (!done) { done=true; stationCache[name]=null; cb(null); } }, 5000);
+  script.onerror = (e) => {
+    console.error(`[ODsay] "${name}" 스크립트 로드 실패:`, e);
+    if (!done) { done=true; stationCache[name]=null; cb(null); }
+  };
+  setTimeout(() => {
+    if (!done) {
+      console.warn(`[ODsay] "${name}" 타임아웃`);
+      done=true; stationCache[name]=null; cb(null);
+    }
+  }, 5000);
   document.head.appendChild(script);
 }
 
