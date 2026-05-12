@@ -252,7 +252,7 @@
 
 <script>
 // ===================== 설정 =====================
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycbwjgM1KxdEif_6r02a6IqAKQiEsQm0hG7OHjbGSesvi1YyHwqmjfbkZUI2c4P1OwIwW/exec';
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbz5fTq5Fx4SqyDzQkC9qMW2Z4nt-dwj4KeLBrFc-tHDBTtgrRbPZX7QA6AA3wTjxlbn/exec';
 
 
 let allData = [];
@@ -300,7 +300,8 @@ function processData(raw) {
       fare:      r.fare || 0,
       route:     r.route || '',
       fromCoord: Array.isArray(r.fromCoord) ? r.fromCoord : null,
-      toCoord:   Array.isArray(r.toCoord)   ? r.toCoord   : null
+      toCoord:   Array.isArray(r.toCoord)   ? r.toCoord   : null,
+      waypoints: Array.isArray(r.waypoints) && r.waypoints.length >= 2 ? r.waypoints : null
     }));
 
   initMonthBtns();
@@ -457,30 +458,37 @@ function fetchODsayRoute(trip, idx, allCoords, done) {
   const color = getRouteColor(trip.type);
   const fromCoord = trip.fromCoord;
   const toCoord   = trip.toCoord;
+  const waypoints = trip.waypoints;
 
-  if (fromCoord && toCoord) {
-    // 출발 마커 — 원+숫자
+  // 경로선 그리기 (waypoints 있으면 노선 따라, 없으면 직선)
+  const linePoints = waypoints && waypoints.length >= 2 ? waypoints
+                   : (fromCoord && toCoord ? [fromCoord, toCoord] : null);
+
+  if (linePoints) {
+    L.polyline(linePoints, { color, weight: 4, opacity: 0.85 }).addTo(transitMap);
+    linePoints.forEach(p => allCoords.push(p));
+  }
+
+  // 출발 마커 — 원+숫자
+  if (fromCoord) {
     L.marker(fromCoord, {
       icon: L.divIcon({
-        html: `<div style="background:${color};color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3);">${idx+1}</div>`,
-        className: '', iconSize: [22,22], iconAnchor: [11,11]
+        html: `<div style="background:${color};color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3);">${idx+1}</div>`,
+        className: '', iconSize: [24,24], iconAnchor: [12,12]
       })
     }).addTo(transitMap).bindPopup(`<b>${idx+1}번째 출발</b><br>${trip.from}<br>${trip.fromTime}`);
+  }
 
-    // 도착 마커 — 화살표
-    const isLast = idx === transitMap._lastIdx;
+  // 도착 마커 — 화살표
+  if (toCoord) {
     L.marker(toCoord, {
       icon: L.divIcon({
-        html: `<div style="color:${color};font-size:18px;transform:translate(-50%,-80%);">▼</div>`,
-        className: '', iconSize: [22,22], iconAnchor: [11,18]
+        html: `<div style="color:${color};font-size:20px;transform:translate(-50%,-80%);">▼</div>`,
+        className: '', iconSize: [24,24], iconAnchor: [12,20]
       })
     }).addTo(transitMap).bindPopup(`<b>${idx+1}번째 도착</b><br>${trip.to}<br>${trip.route||trip.type} · ${trip.fare.toLocaleString()}원`);
-
-    // 경로선
-    L.polyline([fromCoord, toCoord], { color, weight: 4, opacity: 0.8 }).addTo(transitMap);
-
-    allCoords.push(fromCoord, toCoord);
   }
+
   done();
 }
 
