@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>대중교통 동선 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #f4f6fb;
+    --card: #ffffff;
+    --border: #e8eaf2;
+    --text: #1a1d2e;
+    --sub: #7a7f99;
+    --bus: #2b7fff;
+    --subway: #00a86b;
+    --train: #e8920a;
+    --accent: #2b7fff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .header {
+    background: linear-gradient(135deg, #1a1d2e 0%, #2b3a6b 100%);
+    color: white;
+    padding: 20px 24px 16px;
+  }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .header-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: #7eb3ff; }
+  .header-title { font-size: 22px; font-weight: 900; margin-top: 2px; }
+  .header-title span { color: #7eb3ff; }
+
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.8); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  .container { padding: 16px; max-width: 900px; margin: 0 auto; }
+
+  /* KPI 카드 */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  @media(max-width:600px){ .kpi-row { grid-template-columns: repeat(2,1fr); } }
+  .kpi-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
+  .kpi-label { font-size: 10px; color: var(--sub); font-weight: 600; margin-bottom: 6px; }
+  .kpi-value { font-size: 20px; font-weight: 900; color: var(--text); }
+  .kpi-unit { font-size: 11px; font-weight: 500; color: var(--sub); margin-left: 2px; }
+
+  /* 날짜 선택 */
+  .date-bar {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .date-bar label { font-size: 12px; font-weight: 700; color: var(--sub); }
+  .date-bar input[type=date] {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--bg);
+    cursor: pointer;
+  }
+  .month-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .month-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--sub);
+    transition: all .15s;
+  }
+  .month-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .month-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+  .panel {
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
+  .panel-header {
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--sub);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .panel-header::before { content:''; display:inline-block; width:3px; height:12px; border-radius:2px; background:var(--accent); }
+
+  /* 지도 - 전체 너비 */
+  #transitMap { width: 100%; height: 420px; }
+
+  /* 하단 2열: 이동경로 + 교통비 */
+  .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  @media(max-width:700px){ .bottom-grid { grid-template-columns: 1fr; } }
+
+  /* 이동 내역 리스트 */
+  .trip-list { padding: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; }
+  .trip-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border-radius: 10px;
+    border-left: 3px solid var(--bus);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .trip-item:hover { transform: translateX(3px); }
+  .trip-item.subway { border-left-color: var(--subway); }
+  .trip-item.train  { border-left-color: var(--train); }
+  .trip-item.jigu   { border-left-color: var(--jigu); }
+  .trip-item.selected { box-shadow: 0 0 0 2px var(--accent); }
+
+  .trip-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--bus); color: white;
+    font-size: 10px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .trip-item.subway .trip-num { background: var(--subway); }
+  .trip-item.train  .trip-num { background: var(--train); }
+  .trip-item.jigu   .trip-num { background: var(--jigu); }
+
+  .trip-info { flex: 1; min-width: 0; }
+  .trip-time { font-size: 10px; color: var(--sub); font-weight: 600; margin-bottom: 3px; }
+  .trip-route { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .trip-meta { display: flex; gap: 6px; align-items: center; margin-top: 3px; }
+  .trip-tag {
+    font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+    background: #eef2ff; color: var(--bus);
+  }
+  .trip-item.subway .trip-tag { background: #e8f5ee; color: var(--subway); }
+  .trip-item.train  .trip-tag { background: #fff4e6; color: var(--train); }
+  .trip-item.jigu   .trip-tag { background: #f5eeff; color: var(--jigu); }
+  .trip-fare { font-size: 11px; font-weight: 700; color: var(--text); }
+
+  /* 월별 차트 영역 */
+  .monthly-list { padding: 12px; display: flex; flex-direction: column; gap: 6px; max-height: 360px; overflow-y: auto; }
+  .monthly-row { display: flex; align-items: center; gap: 10px; }
+  .monthly-date { font-size: 11px; font-weight: 700; color: var(--sub); width: 40px; flex-shrink: 0; }
+  .monthly-bar-wrap { width: 120px; height: 16px; background: var(--bg); border-radius: 4px; overflow: hidden; flex-shrink: 0; }
+  .monthly-bar { height: 100%; border-radius: 4px; background: var(--accent); transition: width .3s; }
+  .monthly-val { font-size: 11px; font-weight: 700; color: var(--text); flex: 1; text-align: right; }
+
+  /* 로딩 */
+  .loading { text-align: center; padding: 40px; color: var(--sub); font-size: 13px; }
+  .spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 10px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty { text-align: center; padding: 30px; color: var(--sub); font-size: 12px; }
+
+  .footer { text-align: center; padding: 20px; font-size: 10px; color: var(--sub); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-label">TRANSIT TRACKER · 실시간 연동</div>
+      <div class="header-title">대중교통 <span>동선</span> 대시보드</div>
+    </div>
+  </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#2b7fff"></div>버스</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#00a86b"></div>지하철</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e8920a"></div>기차</div>
+    </div>
+</div>
+
+<div class="container">
+
+  <!-- KPI -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">이번 달 총 요금</div>
+      <div class="kpi-value" id="kpiFare">—<span class="kpi-unit">원</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">이번 달 탑승 횟수</div>
+      <div class="kpi-value" id="kpiCount">—<span class="kpi-unit">회</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">오늘 탑승 횟수</div>
+      <div class="kpi-value" id="kpiToday">—<span class="kpi-unit">회</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">가장 많이 이용</div>
+      <div class="kpi-value" id="kpiTop" style="font-size:14px;">—</div>
+    </div>
+  </div>
+
+  <!-- 날짜/월 선택 -->
+  <div class="date-bar">
+    <label>날짜 선택</label>
+    <input type="date" id="datePicker" onchange="onDateChange()">
+    <div style="width:1px;height:20px;background:var(--border);"></div>
+    <label>월 선택</label>
+    <div class="month-btns" id="monthBtns"></div>
+  </div>
+
+  <!-- 지도 전체 너비 -->
+  <div class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">오늘 이동 경로</div>
+    <div id="transitMap"></div>
+  </div>
+
+  <!-- 하단: 이동내역(좌) + 일자별 교통비(우) -->
+  <div class="bottom-grid">
+    <div class="panel">
+      <div class="panel-header">이동 내역</div>
+      <div class="trip-list" id="tripList">
+        <div class="loading"><div class="spinner"></div>데이터 불러오는 중...</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">일자별 교통비</div>
+      <div class="monthly-list" id="monthlyList">
+        <div class="loading"><div class="spinner"></div>데이터 불러오는 중...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="footer">POWERED BY 임개미 & Claude · ODsay API</div>
+
+<script>
+// ===================== 설정 =====================
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbykbxVjtaGumYkXK2aOSVYfReqbJNlRZCHnRc9IxIilW6c3bFsf3r8J32DBGMT_-37y/exec';
+const ODSAY_KEY = encodeURIComponent('uEAu63t+apv2RoZT49tU3g');
+
+let allData = [];
+let transitMap = null;
+let selectedDate = todayStr();
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ===================== 데이터 로드 =====================
+function loadData() {
+  const cb = 'cb_transit_' + Date.now();
+  const script = document.createElement('script');
+  script.src = `${SHEET_URL}?callback=${cb}`;
+  window[cb] = function(raw) {
+    delete window[cb];
+    document.head.removeChild(script);
+    processData(raw);
+  };
+  script.onerror = () => {
+    document.getElementById('tripList').innerHTML = '<div class="empty">⚠️ 데이터 로드 실패</div>';
+  };
+  document.head.appendChild(script);
+}
+
+function processData(raw) {
+  // API가 [{type, date, from, fromTime, to, fare, route}] 형태로 반환
+  let rows = [];
+  if (Array.isArray(raw)) {
+    rows = raw;
+  } else if (raw && Array.isArray(raw.data)) {
+    rows = raw.data;
+  }
+
+  allData = rows.filter(r => r && r.date && ['버스','지하철','기차'].includes(r.type))
+    .map((r, i) => ({
+      idx: i,
+      type:     r.type,
+      dateStr:  r.date,
+      from:     r.from || '',
+      fromTime: r.fromTime || '',
+      to:       r.to || '',
+      fare:     r.fare || 0,
+      route:    r.route || ''
+    }));
+
+  initMonthBtns();
+  updateKPI();
+  renderDate(selectedDate);
+}
+
+// ===================== 월 버튼 =====================
+function initMonthBtns() {
+  const months = [...new Set(allData.map(r => r.dateStr.substring(0,7)))].sort();
+  const container = document.getElementById('monthBtns');
+  container.innerHTML = '';
+  months.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'month-btn';
+    btn.textContent = m.substring(5) + '월';
+    btn.dataset.month = m;
+    btn.onclick = () => selectMonth(m);
+    container.appendChild(btn);
+  });
+  // 현재 날짜의 월 활성화
+  const curMonth = selectedDate.substring(0,7);
+  const target = months.includes(curMonth) ? curMonth : months[months.length-1];
+  selectMonth(target, false);
+}
+
+function selectMonth(month, updateDate=true) {
+  document.querySelectorAll('.month-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.month === month);
+  });
+  if (updateDate) {
+    // 해당 월의 첫 데이터 날짜로 이동
+    const first = allData.find(r => r.dateStr.startsWith(month));
+    if (first) {
+      selectedDate = first.dateStr;
+      document.getElementById('datePicker').value = selectedDate;
+      renderDate(selectedDate);
+    }
+  }
+  renderMonthly(month);
+}
+
+// ===================== KPI =====================
+function updateKPI() {
+  const curMonth = selectedDate.substring(0,7);
+  const monthData = allData.filter(r => r.dateStr.startsWith(curMonth));
+  const todayData = allData.filter(r => r.dateStr === selectedDate);
+
+  document.getElementById('kpiFare').innerHTML =
+    monthData.reduce((s,r)=>s+r.fare,0).toLocaleString() + '<span class="kpi-unit">원</span>';
+  document.getElementById('kpiCount').innerHTML =
+    monthData.length + '<span class="kpi-unit">회</span>';
+  document.getElementById('kpiToday').innerHTML =
+    todayData.length + '<span class="kpi-unit">회</span>';
+
+  // 가장 많이 이용한 노선
+  const routeCount = {};
+  monthData.forEach(r => { if(r.route) routeCount[r.route] = (routeCount[r.route]||0)+1; });
+  const topRoute = Object.entries(routeCount).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('kpiTop').textContent = topRoute ? topRoute[0] : '—';
+}
+
+// ===================== 날짜별 렌더링 =====================
+function onDateChange() {
+  selectedDate = document.getElementById('datePicker').value;
+  updateKPI();
+  renderDate(selectedDate);
+  const month = selectedDate.substring(0,7);
+  document.querySelectorAll('.month-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.month === month);
+  });
+  renderMonthly(month);
+}
+
+function renderDate(dateStr) {
+  const trips = allData.filter(r => r.dateStr === dateStr)
+    .sort((a,b) => a.fromTime.localeCompare(b.fromTime));
+
+  renderTripList(trips);
+  renderMap(trips);
+}
+
+// ===================== 이동 내역 리스트 =====================
+function typeClass(type) {
+  if (type === '지하철') return 'subway';
+  if (type === '기차') return 'train';
+  return '';
+}
+
+function renderTripList(trips) {
+  const el = document.getElementById('tripList');
+  if (trips.length === 0) {
+    el.innerHTML = '<div class="empty">📭 이 날 대중교통 이용 내역이 없어요</div>';
+    return;
+  }
+  el.innerHTML = trips.map((t, i) => `
+    <div class="trip-item ${typeClass(t.type)}" onclick="focusTrip(${i})">
+      <div class="trip-num">${i+1}</div>
+      <div class="trip-info">
+        <div class="trip-time">${t.fromTime || '—'} 승차</div>
+        <div class="trip-route">${t.from} → ${t.to}</div>
+        <div class="trip-meta">
+          <span class="trip-tag">${t.route || t.type}</span>
+          <span class="trip-fare">${t.fare.toLocaleString()}원</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ===================== 지도 렌더링 =====================
+function renderMap(trips) {
+  if (!transitMap) {
+    transitMap = L.map('transitMap', { zoomControl: true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap', maxZoom: 18
+    }).addTo(transitMap);
+  } else {
+    transitMap.eachLayer(layer => {
+      if (!(layer instanceof L.TileLayer)) transitMap.removeLayer(layer);
+    });
+  }
+
+  if (trips.length === 0) {
+    transitMap.setView([35.1595, 126.8526], 12);
+    return;
+  }
+
+  // ODsay API로 각 구간 경로 그리기
+  let pending = trips.length;
+  const allCoords = [];
+
+  trips.forEach((trip, i) => {
+    if (trip.type === '지구') {
+      pending--;
+      if (pending === 0) fitMap(allCoords);
+      return;
+    }
+    fetchODsayRoute(trip, i, allCoords, () => {
+      pending--;
+      if (pending === 0) fitMap(allCoords);
+    });
+  });
+}
+
+function getRouteColor(type) {
+  if (type === '지하철') return '#00a86b';
+  if (type === '기차') return '#e8920a';
+  if (type === '지구') return '#9b59b6';
+  return '#2b7fff';
+}
+
+function fetchODsayRoute(trip, idx, allCoords, done) {
+  // ODsay 정류장 검색 → 경로 좌표 가져오기
+  // 출발지 좌표 검색
+  const cbName = 'odsay_' + Date.now() + '_' + idx;
+  const color = getRouteColor(trip.type);
+
+  // 출발/도착 정류장 좌표를 ODsay로 검색
+  searchStation(trip.from, (fromCoord) => {
+    searchStation(trip.to, (toCoord) => {
+      if (fromCoord && toCoord) {
+        // 출발 마커
+        L.marker(fromCoord, {
+          icon: L.divIcon({
+            html: `<div style="background:${color};color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3);">${idx+1}</div>`,
+            className: '', iconSize: [22,22], iconAnchor: [11,11]
+          })
+        }).addTo(transitMap).bindPopup(`<b>${idx+1}번째 출발</b><br>${trip.from}<br>${trip.fromTime}`);
+
+        // 도착 마커
+        const isLast = false;
+        L.marker(toCoord, {
+          icon: L.divIcon({
+            html: `<div style="color:${color};font-size:18px;transform:translate(-50%,-80%);">▼</div>`,
+            className: '', iconSize: [22,22], iconAnchor: [11,18]
+          })
+        }).addTo(transitMap).bindPopup(`<b>${idx+1}번째 도착</b><br>${trip.to}<br>${trip.route||trip.type} · ${trip.fare.toLocaleString()}원`);
+
+        // 경로선
+        L.polyline([fromCoord, toCoord], { color, weight: 4, opacity: 0.8 }).addTo(transitMap);
+
+        allCoords.push(fromCoord, toCoord);
+      }
+      done();
+    });
+  });
+}
+
+// ODsay 정류장 좌표 검색
+const stationCache = {};
+function searchStation(name, cb) {
+  if (stationCache[name] !== undefined) { cb(stationCache[name]); return; }
+  if (!name) { cb(null); return; }
+
+  const cbName = 'odsay_st_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+  const script = document.createElement('script');
+  script.src = `https://api.odsay.com/v1/api/searchStation?apiKey=${ODSAY_KEY}&stationName=${encodeURIComponent(name)}&lang=0&output=json&callback=${cbName}`;
+  let done = false;
+
+  window[cbName] = function(data) {
+    if (done) return; done = true;
+    delete window[cbName];
+    if (script.parentNode) script.parentNode.removeChild(script);
+    try {
+      // ODsay 응답: data.result.station 배열
+      const stations = data?.result?.station;
+      if (stations && stations.length > 0) {
+        // 광주 지역(x: 126.x, y: 35.x) 우선 선택
+        const gwangju = stations.find(s => {
+          const x = parseFloat(s.x), y = parseFloat(s.y);
+          return x >= 126.7 && x <= 127.1 && y >= 35.0 && y <= 35.3;
+        }) || stations[0];
+        const coord = [parseFloat(gwangju.y), parseFloat(gwangju.x)];
+        stationCache[name] = coord;
+        cb(coord);
+      } else {
+        stationCache[name] = null;
+        cb(null);
+      }
+    } catch(e) { stationCache[name] = null; cb(null); }
+  };
+  script.onerror = () => { if (!done) { done=true; stationCache[name]=null; cb(null); } };
+  setTimeout(() => { if (!done) { done=true; stationCache[name]=null; cb(null); } }, 5000);
+  document.head.appendChild(script);
+}
+
+function fitMap(coords) {
+  if (coords.length > 0) {
+    transitMap.fitBounds(L.latLngBounds(coords).pad(0.2));
+  } else {
+    transitMap.setView([35.1595, 126.8526], 12);
+  }
+}
+
+function focusTrip(idx) {
+  document.querySelectorAll('.trip-item').forEach((el, i) => {
+    el.classList.toggle('selected', i === idx);
+  });
+}
+
+// ===================== 월별 일자별 차트 =====================
+function renderMonthly(month) {
+  const monthData = allData.filter(r => r.dateStr.startsWith(month));
+  const byDate = {};
+  monthData.forEach(r => {
+    byDate[r.dateStr] = (byDate[r.dateStr] || 0) + r.fare;
+  });
+
+  const entries = Object.entries(byDate).sort();
+  const maxVal = Math.max(...entries.map(e=>e[1]), 1);
+  const el = document.getElementById('monthlyList');
+
+  if (entries.length === 0) {
+    el.innerHTML = '<div class="empty">이 달 데이터가 없어요</div>';
+    return;
+  }
+
+  el.innerHTML = entries.map(([date, val]) => {
+    const pct = Math.round((val/maxVal)*100);
+    const day = date.substring(5);
+    const isSelected = date === selectedDate;
+    return `
+      <div class="monthly-row" onclick="selectDay('${date}')" style="cursor:pointer;">
+        <div class="monthly-date" style="${isSelected?'color:var(--accent);font-weight:900;':''}">${day}</div>
+        <div class="monthly-bar-wrap">
+          <div class="monthly-bar" style="width:${pct}%;${isSelected?'background:#e8920a;':''}"></div>
+        </div>
+        <div class="monthly-val">${val.toLocaleString()}원</div>
+      </div>`;
+  }).join('');
+}
+
+function selectDay(dateStr) {
+  selectedDate = dateStr;
+  document.getElementById('datePicker').value = dateStr;
+  updateKPI();
+  renderDate(dateStr);
+  renderMonthly(dateStr.substring(0,7));
+}
+
+// ===================== 초기화 =====================
+window.onload = function() {
+  document.getElementById('datePicker').value = selectedDate;
+  loadData();
+};
+</script>
+</body>
+</html>
