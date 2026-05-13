@@ -660,7 +660,17 @@ function openReport(type, targetDate) {
   const date = document.getElementById('reportDate');
   const content = document.getElementById('reportContent');
 
-  const now = targetDate ? new Date(targetDate) : new Date();
+  // selectedYear 기준으로 기본 날짜 설정
+  let now;
+  if (targetDate) {
+    now = new Date(targetDate);
+  } else {
+    now = new Date();
+    // selectedYear가 현재 연도와 다르면 해당 연도의 오늘 날짜로
+    if (selectedYear !== now.getFullYear()) {
+      now.setFullYear(selectedYear);
+    }
+  }
   const dayNames = ['일','월','화','수','목','금','토'];
 
   if (type === 'daily') {
@@ -1120,7 +1130,7 @@ function buildMonthlyReport(month, year) {
     if (!weekMap[key]) weekMap[key] = { monday:new Date(mon), total:0, h:0, m:0 };
   }
   mRoutes.forEach(r => {
-    const d = parseRouteDate(r.date); if(!d) return;
+    const d = parseRouteDate(r.date, year); if(!d) return;
     const mon = getWeekMonday(d);
     const key = mon.getTime();
     if (!weekMap[key]) weekMap[key] = { monday:new Date(mon), total:0, h:0, m:0 };
@@ -1483,6 +1493,11 @@ function buildYearlyReport(year) {
 
 // ── 연도 탭 ──────────────────────────────
 let selectedYear = new Date().getFullYear();
+
+function initSelectedYear() {
+  const years = [...new Set(allRoutesGlobal.map(r => r.year || new Date().getFullYear()))].sort();
+  if (years.length > 0) selectedYear = years[years.length - 1];
+}
 
 function renderYearTabs() {
   const years = [...new Set(allRoutesGlobal.map(r => r.year || new Date().getFullYear()))].sort();
@@ -1973,8 +1988,12 @@ async function loadAll() {
     let month;
     const mYear = sheetName.match(/운행기록\((\d+)년(\d+)월\)/);
     const mMon  = sheetName.match(/운행기록\((\d+)월\)/);
+    let sheetYear = null;
     if (mYear) {
       month = `${mYear[2]}월`;
+      const yy = parseInt(mYear[1]);
+      // "25" → 2025, "2025" → 2025
+      sheetYear = yy < 100 ? 2000 + yy : yy;
     } else if (mMon) {
       month = `${mMon[1]}월`;
     } else {
@@ -1982,7 +2001,7 @@ async function loadAll() {
       month = fallback ? fallback[1] : sheetName;
     }
 
-    const routes = extractRoutesFromArray(rows, month, year);
+    const routes = extractRoutesFromArray(rows, month, sheetYear || year);
     if (routes.length > 0) { allRoutes.push(...routes); loadedCount++; }
   });
 
@@ -2024,6 +2043,8 @@ async function loadAll() {
   // 보고서는 전체 데이터 (연간 비교용)
   allRoutesGlobal = allRoutes;
 
+  // selectedYear 초기화 (데이터 기반)
+  initSelectedYear();
   // 연도 탭 렌더링
   renderYearTabs();
   // 전년도 비교 데이터
@@ -2167,13 +2188,13 @@ async function loadTransit() {
 // ══════════════════════════════════════
 // 당월 주차별 수입
 // ══════════════════════════════════════
-function parseRouteDate(dateStr) {
-  // "1/3", "2/14", "3/5" → Date 객체 (현재 연도 기준)
+function parseRouteDate(dateStr, forceYear) {
+  // "1/3", "2/14", "3/5" → Date 객체
   if (!dateStr) return null;
   const str = String(dateStr).trim();
   const m = str.match(/^(\d{1,2})\/(\d{1,2})$/);
   if (!m) return null;
-  const year = new Date().getFullYear();
+  const year = forceYear || new Date().getFullYear();
   return new Date(year, parseInt(m[1]) - 1, parseInt(m[2]));
 }
 
