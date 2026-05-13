@@ -2002,6 +2002,7 @@ async function loadAll() {
     }
 
     const routes = extractRoutesFromArray(rows, month, sheetYear || year);
+    console.log(`[시트] ${sheetName} → month:${month}, year:${sheetYear||year}, routes:${routes.length}`);
     if (routes.length > 0) { allRoutes.push(...routes); loadedCount++; }
   });
 
