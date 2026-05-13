@@ -713,8 +713,20 @@ function openReport(type, targetDate) {
     header.style.background = 'linear-gradient(135deg,#e8920a,#c47209)';
     badge.textContent = 'YEARLY REPORT';
     title.textContent = '연간 운행 결과보고서';
-    // ★ 선택된 연도 기준
     date.textContent = `${selectedYear}년`;
+
+    // 연도 선택 버튼 (보고서 헤더 안)
+    const years = [...new Set(allRoutesGlobal.map(r => r.year || new Date().getFullYear()))].sort();
+    if (years.length > 1) {
+      date.innerHTML = years.map(y => `
+        <button onclick="selectedYear=${y}; document.getElementById('reportDate').innerHTML=document.getElementById('reportDate').innerHTML; openReport('yearly');"
+          style="padding:3px 12px;border-radius:20px;border:none;cursor:pointer;margin-right:6px;
+          font-size:12px;font-weight:700;font-family:'Noto Sans KR',sans-serif;
+          background:${y===selectedYear?'rgba(255,255,255,0.9)':'rgba(255,255,255,0.25)'};
+          color:${y===selectedYear?'#e8920a':'white'};">
+          ${String(y).slice(2)}년
+        </button>`).join('');
+    }
     content.innerHTML = buildYearlyReport(selectedYear);
   }
 
@@ -754,7 +766,7 @@ function buildDailyReport(targetDate) {
     const targetYr = new Date(dateStr).getFullYear();
     const r = allRoutesGlobal.filter(r => {
       if ((r.year || new Date().getFullYear()) !== targetYr) return false;
-      const d = parseRouteDate(r.date);
+      const d = parseRouteDate(r.date, targetYr);
       return d && toStr(d) === dateStr;
     });
     const h = r.filter(x => x.type==='핸들러');
@@ -935,7 +947,7 @@ function buildWeeklyReport(targetDate) {
   const targetYear = now.getFullYear();
   const weekRoutes = allRoutesGlobal.filter(r => {
     if ((r.year || new Date().getFullYear()) !== targetYear) return false;
-    const d = parseRouteDate(r.date);
+    const d = parseRouteDate(r.date, targetYear);
     if (!d) return false;
     const dm = getWeekMonday(d);
     return dm.getTime() === mon.getTime();
@@ -945,7 +957,7 @@ function buildWeeklyReport(targetDate) {
   const prevMon = new Date(mon); prevMon.setDate(prevMon.getDate()-7);
   const prevWeekRoutes = allRoutesGlobal.filter(r => {
     if ((r.year || new Date().getFullYear()) !== targetYear) return false;
-    const d = parseRouteDate(r.date);
+    const d = parseRouteDate(r.date, targetYear);
     if (!d) return false;
     const dm = getWeekMonday(d);
     return dm.getTime() === prevMon.getTime();
