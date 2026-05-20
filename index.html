@@ -677,13 +677,31 @@ function openReport(type, targetDate) {
     header.style.background = 'linear-gradient(135deg,#00a86b,#007a4d)';
     badge.textContent = 'DAILY REPORT';
     title.textContent = '일일 운행 결과보고서';
+    // 이 달의 운행 날짜 목록
+    const curYY = now.getFullYear();
+    const curMM = now.getMonth()+1;
+    const activeDates = new Set(
+      allRoutesGlobal
+        .filter(r => (r.year||curYY)===curYY)
+        .map(r => parseRouteDate(r.date, curYY))
+        .filter(d => d && d.getMonth()+1===curMM)
+        .map(d => d.getDate())
+    );
+    const activeDots = [...activeDates].sort((a,b)=>a-b)
+      .map(d => `<span style="display:inline-block;width:22px;height:22px;border-radius:50%;
+        background:rgba(255,255,255,${String(now.getDate())===String(d)?'0.9':'0.25'});
+        color:${String(now.getDate())===String(d)?'#00a86b':'white'};
+        font-size:10px;font-weight:700;line-height:22px;text-align:center;
+        cursor:pointer;margin:1px;" onclick="openReport('daily','${curYY}-${String(curMM).padStart(2,'0')}-${String(d).padStart(2,'0')}')">${d}</span>`)
+      .join('');
     date.innerHTML = `
       ${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${dayNames[now.getDay()]})
       <input type="date" id="dailyDatePicker"
         value="${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}"
         style="margin-left:8px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);
         border-radius:6px;color:white;padding:2px 6px;font-size:12px;cursor:pointer;"
-        onchange="openReport('daily', this.value)">`;
+        onchange="openReport('daily', this.value)">
+      <div style="margin-top:8px;font-size:10px;color:rgba(255,255,255,0.7);font-weight:600;">이 달 운행일: ${activeDots||'없음'}</div>`;
     content.innerHTML = buildDailyReport(now);
 
   } else if (type === 'weekly') {
@@ -692,7 +710,19 @@ function openReport(type, targetDate) {
     title.textContent = '주간 운행 결과보고서';
     const mon = getWeekMonday(now);
     const sun = new Date(mon); sun.setDate(sun.getDate()+6);
+    // 연도 버튼 + 날짜 picker
+    const wYears = [...new Set(allRoutesGlobal.map(r => r.year || new Date().getFullYear()))].sort();
+    const wYearBtns = wYears.length > 1 ? wYears.map(y => `
+      <button onclick="switchWeekReportYear(${y}, '${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}')"
+        id="weekYearBtn_${y}"
+        style="padding:3px 10px;border-radius:20px;border:none;cursor:pointer;margin-right:4px;
+        font-size:11px;font-weight:700;font-family:'Noto Sans KR',sans-serif;
+        background:${y===now.getFullYear()?'rgba(255,255,255,0.9)':'rgba(255,255,255,0.25)'};
+        color:${y===now.getFullYear()?'#2b7fff':'white'};">
+        ${String(y).slice(2)}년
+      </button>`).join('') : '';
     date.innerHTML = `
+      ${wYearBtns}
       ${mon.getMonth()+1}/${mon.getDate()} ~ ${sun.getMonth()+1}/${sun.getDate()}
       <input type="date" id="weeklyDatePicker"
         value="${mon.getFullYear()}-${String(mon.getMonth()+1).padStart(2,'0')}-${String(mon.getDate()).padStart(2,'0')}"
@@ -719,13 +749,16 @@ function openReport(type, targetDate) {
     const years = [...new Set(allRoutesGlobal.map(r => r.year || new Date().getFullYear()))].sort();
     if (years.length > 1) {
       date.innerHTML = years.map(y => `
-        <button onclick="selectedYear=${y}; document.getElementById('reportDate').innerHTML=document.getElementById('reportDate').innerHTML; openReport('yearly');"
+        <button onclick="switchReportYear(${y})"
+          id="yearReportBtn_${y}"
           style="padding:3px 12px;border-radius:20px;border:none;cursor:pointer;margin-right:6px;
           font-size:12px;font-weight:700;font-family:'Noto Sans KR',sans-serif;
           background:${y===selectedYear?'rgba(255,255,255,0.9)':'rgba(255,255,255,0.25)'};
           color:${y===selectedYear?'#e8920a':'white'};">
           ${String(y).slice(2)}년
         </button>`).join('');
+    } else {
+      date.textContent = `${selectedYear}년`;
     }
     content.innerHTML = buildYearlyReport(selectedYear);
   }
@@ -831,11 +864,10 @@ function buildDailyReport(targetDate) {
     </div>
   </div>`;
 
-  // 03. 이동경로 (지도 + 리스트)
+  // 03. 이동경로 리스트 (지도 제거)
   if (sorted.length > 0) {
     html += `<div style="${secStyle}">
       ${secTitle('오늘 이동경로')}
-      <div id="reportRouteMap" style="width:100%;height:280px;border-radius:10px;margin-bottom:14px;background:#f0f1f5;"></div>
       <div id="reportRouteList">`;
     sorted.forEach((r,i) => {
       const isLast = i===sorted.length-1;
@@ -866,73 +898,6 @@ function buildDailyReport(targetDate) {
           </div>
         </div>`;
     });
-    html += `</div></div>`;
-
-    // 지도 렌더링은 HTML 삽입 후 setTimeout으로 실행
-    setTimeout(() => {
-      try {
-        const mapEl = document.getElementById('reportRouteMap');
-        if (!mapEl || typeof L === 'undefined') return;
-
-        const routeMap = L.map('reportRouteMap', { zoomControl:true });
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution:'© OpenStreetMap', maxZoom:18
-        }).addTo(routeMap);
-
-        const points = [];
-
-        sorted.forEach((r, i) => {
-          const fromCoord = COORDS[r.start];
-          const toCoord   = COORDS[r.end];
-          const isLast    = i === sorted.length - 1;
-          const isHandler = r.type === '핸들러';
-          const routeColor = isHandler ? '#2b7fff' : '#00a86b';
-
-          if (fromCoord) points.push(fromCoord);
-          if (toCoord)   points.push(toCoord);
-
-          // 경로선 그리기
-          if (fromCoord && toCoord) {
-            L.polyline([fromCoord, toCoord], { color: routeColor, weight:3, opacity:0.8 }).addTo(routeMap);
-          }
-
-          // 출발지 마커 — 원+숫자
-          if (fromCoord) {
-            const bgColor = isHandler ? '#2b7fff' : '#00a86b';
-            L.marker(fromCoord, {
-              icon: L.divIcon({
-                html:`<div style="background:${bgColor};color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,.3);">${i+1}</div>`,
-                className:'', iconSize:[22,22], iconAnchor:[11,11]
-              })
-            }).addTo(routeMap).bindPopup(`<b>${i+1}번째 출발</b><br>${r.start}`);
-          }
-
-          // 도착지 마커 — 화살표 (마지막은 빨간 깃발)
-          if (toCoord) {
-            const arrowColor = isLast ? '#e03e3e' : routeColor;
-            const arrowHtml = isLast
-              ? `<div style="color:#e03e3e;font-size:20px;transform:translate(-50%,-100%);">📍</div>`
-              : `<div style="color:${arrowColor};font-size:18px;font-weight:bold;transform:translate(-50%,-80%);">▼</div>`;
-            L.marker(toCoord, {
-              icon: L.divIcon({
-                html: arrowHtml,
-                className:'', iconSize:[22,22], iconAnchor:[11,18]
-              })
-            }).addTo(routeMap).bindPopup(`<b>${i+1}번째 도착</b><br>${r.end}<br>${r.type} · ${(r.fare||0).toLocaleString()}원`);
-          }
-        });
-
-        if (points.length > 0) {
-          routeMap.fitBounds(L.latLngBounds(points).pad(0.2));
-        } else {
-          routeMap.setView([35.1595, 126.8526], 12);
-          mapEl.insertAdjacentHTML('afterend','<div style="font-size:11px;color:#7a7f99;text-align:center;margin-bottom:8px;">📍 좌표 캐시에 없는 장소는 지도에 표시되지 않아요</div>');
-        }
-      } catch(e) {
-        console.log('지도 오류:', e);
-      }
-    }, 300);
-
   } else {
     html += `<div style="${secStyle}"><div style="text-align:center;color:#7a7f99;font-size:13px;padding:20px;">오늘 운행 데이터가 없어요</div></div>`;
   }
@@ -1331,6 +1296,24 @@ function switchMonthReport(month, year) {
   document.getElementById('reportDate').textContent = `${year}년 ${month}월`;
 }
 
+function switchReportYear(year) {
+  selectedYear = year;
+  document.querySelectorAll('[id^="yearReportBtn_"]').forEach(btn => {
+    const y = parseInt(btn.id.replace('yearReportBtn_',''));
+    btn.style.background = y===year ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)';
+    btn.style.color = y===year ? '#e8920a' : 'white';
+  });
+  document.getElementById('reportContent').innerHTML = buildYearlyReport(year);
+}
+
+function switchWeekReportYear(year, currentDateStr) {
+  // 해당 연도의 같은 날짜로 이동
+  const d = new Date(currentDateStr);
+  d.setFullYear(year);
+  const newDateStr = `${year}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  openReport('weekly', newDateStr);
+}
+
 function buildYearlyReport(year) {
   const yRoutes = allRoutesGlobal.filter(r => (r.year || new Date().getFullYear()) === year);
   const prevYRoutes = allRoutesGlobal.filter(r => (r.year || new Date().getFullYear()) === year - 1);
@@ -1378,7 +1361,8 @@ function buildYearlyReport(year) {
   const hourData = {};
   for(let i=0;i<24;i++) hourData[i]={cnt:0,total:0};
   yRoutes.forEach(r => {
-    if(r.h!==null&&r.h!==undefined){ hourData[r.h].cnt++; hourData[r.h].total+=r.fare; }
+    const hh = parseInt(r.h);
+    if(!isNaN(hh) && hh>=0 && hh<=23){ hourData[hh].cnt++; hourData[hh].total+=r.fare; }
   });
   const peakHour = Object.entries(hourData).sort((a,b)=>b[1].total-a[1].total)[0];
 
