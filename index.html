@@ -427,6 +427,12 @@ h1 em{color:var(--blue);font-style:normal;}
       <div>
         <div class="sec-label">04 · Transit Card</div>
         <div class="sec-title">이동수단별 이용금액</div>
+        <div id="transitQuarterBtns" style="display:flex;gap:6px;margin:10px 0 12px;">
+          <button onclick="selectTransitQuarter(1)" id="tqBtn1" style="flex:1;padding:5px 0;font-size:11px;font-weight:700;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--muted);cursor:pointer;">Q1</button>
+          <button onclick="selectTransitQuarter(2)" id="tqBtn2" style="flex:1;padding:5px 0;font-size:11px;font-weight:700;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--muted);cursor:pointer;">Q2</button>
+          <button onclick="selectTransitQuarter(3)" id="tqBtn3" style="flex:1;padding:5px 0;font-size:11px;font-weight:700;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--muted);cursor:pointer;">Q3</button>
+          <button onclick="selectTransitQuarter(4)" id="tqBtn4" style="flex:1;padding:5px 0;font-size:11px;font-weight:700;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--muted);cursor:pointer;">Q4</button>
+        </div>
         <div id="transitModeChart" style="display:flex;flex-direction:column;gap:14px;"></div>
       </div>
       <div style="margin-top:14px;display:flex;gap:12px;flex-wrap:wrap;" id="transitModeLegend"></div>
@@ -2127,35 +2133,14 @@ function renderTransit(data) {
   });
 
   // ── 이동수단별 누적 바 ────────────────────
-  const modeEl = document.getElementById('transitModeChart');
-  modeEl.innerHTML = '';
-  const maxMonthTotal = Math.max(1, ...byMode.map(r=>MODES.reduce((s,m)=>s+(r[m]||0),0)));
+  // byMode 전역 저장 후 분기 버튼으로 필터링
+  window._transitByMode = byMode;
+  window._transitModes  = MODES;
+  window._transitColors = COLORS;
 
-  byMode.forEach(r => {
-    if (!r.label) return;
-    const rowTotal = MODES.reduce((s,m)=>s+(r[m]||0),0);
-    if (!rowTotal) return;
-    const pct = (rowTotal/maxMonthTotal)*100;
-    let segments = '';
-    let offset = 0;
-    MODES.forEach(m => {
-      if (!r[m]) return;
-      const w = ((r[m]/maxMonthTotal)*100).toFixed(1);
-      segments += `<div style="width:${w}%;height:100%;background:${COLORS[m]};
-        display:inline-flex;align-items:center;justify-content:center;"
-        onmouseenter="tip(event,'${r.label} ${m}','${r[m].toLocaleString()}원')" onmouseleave="hideTip()">
-      </div>`;
-    });
-    modeEl.innerHTML += `<div style="display:flex;align-items:center;gap:10px;">
-      <div style="font-size:13px;font-weight:700;color:var(--muted);width:28px;flex-shrink:0;">${r.label.replace('월','')}</div>
-      <div style="flex:1;height:44px;background:var(--surface2);border-radius:6px;overflow:hidden;display:flex;">
-        ${segments}
-      </div>
-      <div style="font-size:12px;font-family:'DM Mono',monospace;color:var(--muted);width:56px;text-align:right;flex-shrink:0;">
-        ${rowTotal.toLocaleString()}
-      </div>
-    </div>`;
-  });
+  // 현재 분기 자동 선택
+  const _curQ = Math.ceil((new Date().getMonth() + 1) / 3);
+  selectTransitQuarter(_curQ);
 
   // 범례
   const legEl = document.getElementById('transitModeLegend');
@@ -2164,7 +2149,63 @@ function renderTransit(data) {
   `).join('');
 }
 
-// ── 교통카드 JSONP 로드 ──────────────────
+// ── 분기 선택 & 이동수단별 차트 렌더링 ──────────
+function selectTransitQuarter(q) {
+  // 버튼 스타일 업데이트
+  for (let i = 1; i <= 4; i++) {
+    const btn = document.getElementById('tqBtn' + i);
+    if (!btn) continue;
+    if (i === q) {
+      btn.style.background = '#1a1d2e';
+      btn.style.color = 'white';
+      btn.style.borderColor = '#1a1d2e';
+    } else {
+      btn.style.background = 'var(--surface2)';
+      btn.style.color = 'var(--muted)';
+      btn.style.borderColor = 'var(--border)';
+    }
+  }
+
+  const byMode = window._transitByMode || [];
+  const MODES  = window._transitModes  || ['버스','지하철','기차','지쿠'];
+  const COLORS = window._transitColors || {'버스':'#2b7fff','지하철':'#00a86b','기차':'#e8920a','지쿠':'#e03e3e'};
+  const QUARTER_MONTHS = {1:['1월','2월','3월'], 2:['4월','5월','6월'], 3:['7월','8월','9월'], 4:['10월','11월','12월']};
+
+  const targetLabels = QUARTER_MONTHS[q];
+  // 해당 분기 3개월 데이터만 필터 (없는 달도 빈 행으로)
+  const filtered = targetLabels.map(label => {
+    const found = byMode.find(r => r.label === label);
+    return found || { label };
+  });
+
+  const maxMonthTotal = Math.max(1, ...filtered.map(r => MODES.reduce((s,m)=>s+(r[m]||0),0)));
+  const modeEl = document.getElementById('transitModeChart');
+  modeEl.innerHTML = '';
+
+  filtered.forEach(r => {
+    const rowTotal = MODES.reduce((s,m)=>s+(r[m]||0),0);
+    let segments = '';
+    if (rowTotal > 0) {
+      MODES.forEach(m => {
+        if (!r[m]) return;
+        const w = ((r[m]/maxMonthTotal)*100).toFixed(1);
+        segments += `<div style="width:${w}%;height:100%;background:${COLORS[m]};"
+          onmouseenter="tip(event,'${r.label} ${m}','${r[m].toLocaleString()}원')" onmouseleave="hideTip()"></div>`;
+      });
+    } else {
+      segments = `<div style="width:12%;height:100%;background:var(--border);border-radius:4px;opacity:0.5;"></div>`;
+    }
+    modeEl.innerHTML += `<div style="display:flex;align-items:center;gap:10px;">
+      <div style="font-size:13px;font-weight:700;color:var(--muted);width:28px;flex-shrink:0;">${r.label.replace('월','')}</div>
+      <div style="flex:1;height:44px;background:var(--surface2);border-radius:6px;overflow:hidden;display:flex;">
+        ${segments}
+      </div>
+      <div style="font-size:12px;font-family:'DM Mono',monospace;color:var(--muted);width:56px;text-align:right;flex-shrink:0;">
+        ${rowTotal > 0 ? rowTotal.toLocaleString() : '—'}
+      </div>
+    </div>`;
+  });
+}
 async function loadTransit() {
   try {
     const data = await new Promise((resolve, reject) => {
