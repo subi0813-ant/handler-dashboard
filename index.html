@@ -968,11 +968,24 @@ function buildWeeklyReport(targetDate) {
   // 01. 이번주 실적
   html += `<div style="${secStyle}">
     ${secTitle('이번 주 실적')}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
       ${kpiBox('#00a86b','총 수입',total.toLocaleString(),'원',subRow('핸들러',hTotal.toLocaleString()+'원','#00a86b')+subRow('무버스',mTotal.toLocaleString()+'원','#2b7fff'))}
       ${kpiBox('#2b7fff','총 운행',weekRoutes.length,'건',subRow('핸들러',h.length+'건','#00a86b')+subRow('무버스',m.length+'건','#2b7fff'))}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
       ${kpiBox('#e8920a','건당 평균',avg.toLocaleString(),'원/건',subRow('핸들러',h.length>0?Math.round(hTotal/h.length).toLocaleString()+'원':'—','#00a86b')+subRow('무버스',m.length>0?Math.round(mTotal/m.length).toLocaleString()+'원':'—','#2b7fff'))}
       ${kpiBox('#7c3aed','핸들러 비율',total>0?Math.round(hTotal/total*100):0,'%',subRow('무버스 비율',total>0?Math.round(mTotal/total*100)+'%':'—%','#7c3aed'))}
+      ${(()=>{
+        // Best Day 계산
+        const dayTotals = {};
+        weekRoutes.forEach(r => { if(r.date) dayTotals[r.date] = (dayTotals[r.date]||0) + r.fare; });
+        const bestDay = Object.entries(dayTotals).sort((a,b)=>b[1]-a[1])[0];
+        if (!bestDay) return kpiBox('#e05ce0','Best Day','—','',`<div style="font-size:10px;color:#7a7f99;margin-top:4px;">데이터 없음</div>`);
+        const bd = new Date(bestDay[0]);
+        const dayNames2 = ['일','월','화','수','목','금','토'];
+        const label = `${bd.getMonth()+1}/${bd.getDate()}(${dayNames2[bd.getDay()]})`;
+        return kpiBox('#e05ce0','🌟 Best Day',label,'',`<div style="font-size:11px;color:#7a7f99;margin-top:4px;">${bestDay[1].toLocaleString()}원</div>`);
+      })()}
     </div>
   </div>`;
 
@@ -1426,6 +1439,16 @@ function buildYearlyReport(year) {
     <div style="display:flex;gap:8px;justify-content:center;">
       ${bestMonth?`<div style="background:#fff3e0;border-radius:8px;padding:8px 14px;text-align:center;"><div style="font-size:10px;color:#e8920a;font-weight:700;">🏆 최고월</div><div style="font-size:14px;font-weight:900;">${bestMonth[0]}월</div><div style="font-size:11px;color:#7a7f99;">${bestMonth[1].total.toLocaleString()}원</div></div>`:''}
       ${worstMonth?`<div style="background:#f8f9fc;border-radius:8px;padding:8px 14px;text-align:center;"><div style="font-size:10px;color:#7a7f99;font-weight:700;">📉 최저월</div><div style="font-size:14px;font-weight:900;">${worstMonth[0]}월</div><div style="font-size:11px;color:#7a7f99;">${worstMonth[1].total.toLocaleString()}원</div></div>`:''}
+      ${(()=>{
+        const dayTotals = {};
+        yRoutes.forEach(r => { if(r.date) dayTotals[r.date] = (dayTotals[r.date]||0) + r.fare; });
+        const bestDay = Object.entries(dayTotals).sort((a,b)=>b[1]-a[1])[0];
+        if (!bestDay) return '';
+        const bd = new Date(bestDay[0]);
+        const dayNames2 = ['일','월','화','수','목','금','토'];
+        const label = `${bd.getMonth()+1}/${bd.getDate()}(${dayNames2[bd.getDay()]})`;
+        return `<div style="background:#f3e8ff;border-radius:8px;padding:8px 14px;text-align:center;"><div style="font-size:10px;color:#7c3aed;font-weight:700;">🌟 Best Day</div><div style="font-size:14px;font-weight:900;">${label}</div><div style="font-size:11px;color:#7a7f99;">${bestDay[1].toLocaleString()}원</div></div>`;
+      })()}
     </div>
   </div>`;
 
