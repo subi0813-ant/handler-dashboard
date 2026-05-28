@@ -657,6 +657,84 @@ function setStatus(type, text) {
 
 // ── 보고서 모달 ──────────────────────────────
 let allRoutesGlobal = [];
+let transitDataGlobal = []; // 대중교통 교통비 데이터
+const TRANSIT_API = 'https://script.google.com/macros/s/AKfycbwrxtXnjVUYEFvy6f5nikciValsF2_dA0PzpLS7yVojq7heOg_6NTj5ZNkDRRi5PnH5/exec';
+
+// 대중교통 데이터 로드 (최초 1회)
+async function loadTransitData() {
+  if (transitDataGlobal.length > 0) return transitDataGlobal;
+  try {
+    const res = await fetch(TRANSIT_API);
+    const json = await res.json();
+    const rows = Array.isArray(json) ? json : (json.data || []);
+    transitDataGlobal = rows.filter(r => r && r.date && ['버스','지하철','기차','기타'].includes(r.type))
+      .map(r => ({ date: r.date, type: r.type, fare: parseInt(r.fare)||0, from: r.from||'', to: r.to||'' }));
+  } catch(e) { console.warn('교통비 데이터 로드 실패', e); }
+  return transitDataGlobal;
+}
+
+// 교통비 섹션 HTML 생성 헬퍼
+function buildTransitSection(records, groupBy, secTitleFn, accentColor) {
+  const TC = {'버스':'#2b7fff','지하철':'#00a86b','기차':'#e8920a','기타':'#7c3aed'};
+  const total = records.reduce((s,r)=>s+r.fare,0);
+  const byType = {'버스':{cnt:0,fare:0},'지하철':{cnt:0,fare:0},'기차':{cnt:0,fare:0},'기타':{cnt:0,fare:0}};
+  records.forEach(r => { if(byType[r.type]) { byType[r.type].cnt++; byType[r.type].fare+=r.fare; } });
+
+  // 그룹별 상세 집계
+  const grouped = {};
+  records.forEach(r => {
+    const key = groupBy(r);
+    if (!grouped[key]) grouped[key] = {'버스':0,'지하철':0,'기차':0,'기타':0,total:0,cnt:0};
+    grouped[key][r.type] += r.fare;
+    grouped[key].total   += r.fare;
+    grouped[key].cnt++;
+  });
+  const groupKeys = Object.keys(grouped).sort();
+  const maxGroup  = Math.max(...groupKeys.map(k=>grouped[k].total), 1);
+  const types     = ['버스','지하철','기차','기타'].filter(t=>byType[t].fare>0);
+
+  let html = `<div style="background:#f0f4ff;border-radius:10px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="font-size:12px;font-weight:700;color:#7a7f99;">교통비 합계</div>
+    <div style="font-size:20px;font-weight:900;color:${accentColor};">${total.toLocaleString()}<span style="font-size:11px;color:#7a7f99;">원</span></div>
+  </div>`;
+
+  // 수단별 요약 뱃지
+  html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">`;
+  types.forEach(t => {
+    const d = byType[t];
+    const pct = total > 0 ? Math.round(d.fare/total*100) : 0;
+    html += `<div style="flex:1;min-width:70px;background:#fff;border:1px solid ${TC[t]}33;border-radius:8px;padding:8px 6px;text-align:center;">
+      <div style="font-size:10px;font-weight:700;color:${TC[t]};margin-bottom:2px;">${t}</div>
+      <div style="font-size:13px;font-weight:800;">${d.fare.toLocaleString()}</div>
+      <div style="font-size:10px;color:#7a7f99;">${d.cnt}건 · ${pct}%</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // 그룹별 바
+  if (groupKeys.length > 0) {
+    html += `<div style="display:flex;flex-direction:column;gap:7px;">`;
+    groupKeys.forEach(key => {
+      const g = grouped[key];
+      const rowPct = Math.round((g.total/maxGroup)*100);
+      // 스택 바 세그먼트
+      let segs = '';
+      types.forEach(t => {
+        if (!g[t]) return;
+        const segW = Math.round((g[t]/maxGroup)*100);
+        segs += `<div style="width:${segW}%;height:100%;background:${TC[t]};"></div>`;
+      });
+      html += `<div style="display:flex;align-items:center;gap:8px;">
+        <div style="font-size:11px;font-weight:700;color:#7a7f99;width:36px;flex-shrink:0;text-align:right;">${key}</div>
+        <div style="flex:1;height:18px;background:#f0f1f5;border-radius:4px;overflow:hidden;display:flex;">${segs}</div>
+        <div style="font-size:11px;font-weight:700;color:#1a1d2e;width:58px;text-align:right;flex-shrink:0;">${g.total>0?g.total.toLocaleString()+'원':'—'}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  return html;
+}
 
 function openReport(type, targetDate) {
   const modal = document.getElementById('reportModal');
@@ -709,6 +787,16 @@ function openReport(type, targetDate) {
         onchange="openReport('daily', this.value)">
       <div style="margin-top:8px;font-size:10px;color:rgba(255,255,255,0.7);font-weight:600;">이 달 운행일: ${activeDots||'없음'}</div>`;
     content.innerHTML = buildDailyReport(now);
+    // 교통비 비동기 로딩
+    (async () => {
+      const dateStr = now.toISOString().split('T')[0];
+      const data = await loadTransitData();
+      const rec = data.filter(r => r.date === dateStr);
+      const el = document.getElementById('dailyTransitBody');
+      if (!el) return;
+      if (rec.length === 0) { el.innerHTML = '<div style="color:#7a7f99;font-size:12px;padding:8px 0;">이 날 교통비 내역이 없어요</div>'; return; }
+      el.innerHTML = buildTransitSection(rec, r => r.type, null, '#2b7fff');
+    })();
 
   } else if (type === 'weekly') {
     header.style.background = 'linear-gradient(135deg,#2b7fff,#1a5fd4)';
@@ -736,6 +824,25 @@ function openReport(type, targetDate) {
         border-radius:6px;color:white;padding:2px 6px;font-size:12px;cursor:pointer;"
         onchange="openReport('weekly', this.value)">`;
     content.innerHTML = buildWeeklyReport(now);
+    // 주간 교통비 비동기 로딩
+    (async () => {
+      const wMon = getWeekMonday(now);
+      const data = await loadTransitData();
+      const rec = data.filter(r => {
+        const d = new Date(r.date);
+        const dm = getWeekMonday(d);
+        return dm.getTime() === wMon.getTime();
+      });
+      const el = document.getElementById('weeklyTransitBody');
+      if (!el) return;
+      if (rec.length === 0) { el.innerHTML = '<div style="color:#7a7f99;font-size:12px;padding:8px 0;">이 주 교통비 내역이 없어요</div>'; return; }
+      // 일별 그룹: MM/DD(요일)
+      const dayNames = ['일','월','화','수','목','금','토'];
+      el.innerHTML = buildTransitSection(rec, r => {
+        const d = new Date(r.date);
+        return `${d.getMonth()+1}/${d.getDate()}(${dayNames[d.getDay()]})`;
+      }, null, '#2b7fff');
+    })();
 
   } else if (type === 'monthly') {
     header.style.background = 'linear-gradient(135deg,#7c3aed,#5b21b6)';
@@ -744,6 +851,23 @@ function openReport(type, targetDate) {
     const mn = now.getMonth()+1;
     date.textContent = `${now.getFullYear()}년 ${mn}월`;
     content.innerHTML = buildMonthlyReport(mn, now.getFullYear());
+    // 월간 교통비 비동기 로딩
+    (async () => {
+      const yr = now.getFullYear();
+      const mo = now.getMonth()+1;
+      const prefix = `${yr}-${String(mo).padStart(2,'0')}`;
+      const data = await loadTransitData();
+      const rec = data.filter(r => r.date && r.date.startsWith(prefix));
+      const el = document.getElementById('monthlyTransitBody');
+      if (!el) return;
+      if (rec.length === 0) { el.innerHTML = '<div style="color:#7a7f99;font-size:12px;padding:8px 0;">이 달 교통비 내역이 없어요</div>'; return; }
+      // 주차별 그룹
+      el.innerHTML = buildTransitSection(rec, r => {
+        const d = new Date(r.date);
+        const dayOfMonth = d.getDate();
+        return `${Math.ceil(dayOfMonth/7)}주차`;
+      }, null, '#7c3aed');
+    })();
 
   } else {
     header.style.background = 'linear-gradient(135deg,#e8920a,#c47209)';
@@ -908,6 +1032,12 @@ function buildDailyReport(targetDate) {
     html += `<div style="${secStyle}"><div style="text-align:center;color:#7a7f99;font-size:13px;padding:20px;">오늘 운행 데이터가 없어요</div></div>`;
   }
 
+  // 교통비 섹션 placeholder (비동기 로딩)
+  html += `<div id="dailyTransitSection" style="margin:0 16px 12px;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:#7a7f99;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><span style="display:block;width:14px;height:2px;background:#2b7fff;"></span>일일 교통비 내역</div>
+    <div id="dailyTransitBody" style="font-size:12px;color:#7a7f99;text-align:center;padding:10px;">불러오는 중...</div>
+  </div>`;
+
   html += `<div style="text-align:center;padding:16px;font-size:11px;color:#7a7f99;">POWERED BY 임개미 & Claude</div>`;
   return html;
 }
@@ -1010,6 +1140,12 @@ function buildWeeklyReport(targetDate) {
         ${diffBadge(avg-pAvg,'원')}
       </div>
     </div>
+  </div>`;
+
+  // 02-1. 주간 교통비 (placeholder)
+  html += `<div style="${secStyle}">
+    ${secTitle('주간 교통비 내역').replace('background:#00a86b','background:#2b7fff')}
+    <div id="weeklyTransitBody" style="font-size:12px;color:#7a7f99;text-align:center;padding:10px;">불러오는 중...</div>
   </div>`;
 
   // 03. 요일별 수입
@@ -1210,6 +1346,12 @@ function buildMonthlyReport(month, year) {
         ${diffBadge(avg-pAvg,'원')}
       </div>
     </div>
+  </div>`;
+
+  // 02-1. 월간 교통비 (placeholder)
+  html += `<div style="${secS}">
+    ${sT('월간 교통비 내역')}
+    <div id="monthlyTransitBody" style="font-size:12px;color:#7a7f99;text-align:center;padding:10px;">불러오는 중...</div>
   </div>`;
 
   // 03. 주차별 수입 흐름
