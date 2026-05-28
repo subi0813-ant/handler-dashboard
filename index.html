@@ -274,7 +274,7 @@ h1 em{color:var(--blue);font-style:normal;}
               <div id="reportTitle" style="font-size:22px;font-weight:900;margin-bottom:4px;"></div>
               <div id="reportDate" style="font-size:13px;opacity:0.85;"></div>
             </div>
-            <button onclick="closeReport()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+            <button onclick="closeReport()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;min-width:32px;min-height:32px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;">✕</button>
           </div>
         </div>
 
@@ -660,17 +660,29 @@ let allRoutesGlobal = [];
 let transitDataGlobal = []; // 대중교통 교통비 데이터
 const TRANSIT_API = 'https://script.google.com/macros/s/AKfycbwrxtXnjVUYEFvy6f5nikciValsF2_dA0PzpLS7yVojq7heOg_6NTj5ZNkDRRi5PnH5/exec';
 
-// 대중교통 데이터 로드 (최초 1회)
-async function loadTransitData() {
-  if (transitDataGlobal.length > 0) return transitDataGlobal;
-  try {
-    const res = await fetch(TRANSIT_API);
-    const json = await res.json();
-    const rows = Array.isArray(json) ? json : (json.data || []);
-    transitDataGlobal = rows.filter(r => r && r.date && ['버스','지하철','기차','기타'].includes(r.type))
-      .map(r => ({ date: r.date, type: r.type, fare: parseInt(r.fare)||0, from: r.from||'', to: r.to||'' }));
-  } catch(e) { console.warn('교통비 데이터 로드 실패', e); }
-  return transitDataGlobal;
+// 대중교통 데이터 로드 (JSONP, 최초 1회)
+function loadTransitData() {
+  return new Promise((resolve) => {
+    if (transitDataGlobal.length > 0) { resolve(transitDataGlobal); return; }
+    const cb = 'cb_transit_handler_' + Date.now();
+    const script = document.createElement('script');
+    script.src = `${TRANSIT_API}?callback=${cb}`;
+    window[cb] = function(raw) {
+      delete window[cb];
+      if (document.head.contains(script)) document.head.removeChild(script);
+      const rows = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
+      transitDataGlobal = rows.filter(r => r && r.date && ['버스','지하철','기차','기타'].includes(r.type))
+        .map(r => ({ date: r.date, type: r.type, fare: parseInt(r.fare)||0, from: r.from||'', to: r.to||'' }));
+      console.log('[핸들러] 교통비 데이터 로드 완료:', transitDataGlobal.length, '건');
+      resolve(transitDataGlobal);
+    };
+    script.onerror = () => {
+      console.warn('교통비 JSONP 로드 실패');
+      if (document.head.contains(script)) document.head.removeChild(script);
+      resolve([]);
+    };
+    document.head.appendChild(script);
+  });
 }
 
 // 교통비 섹션 HTML 생성 헬퍼
@@ -891,6 +903,19 @@ function openReport(type, targetDate) {
       date.textContent = `${selectedYear}년`;
     }
     content.innerHTML = buildYearlyReport(selectedYear);
+    // 연간 교통비 비동기 로딩
+    (async () => {
+      const data = await loadTransitData();
+      const rec = data.filter(r => r.date && r.date.startsWith(String(selectedYear)));
+      const el = document.getElementById('yearlyTransitBody');
+      if (!el) return;
+      if (rec.length === 0) { el.innerHTML = '<div style="color:#7a7f99;font-size:12px;padding:8px 0;">이 연도 교통비 내역이 없어요</div>'; return; }
+      // 월별 그룹
+      el.innerHTML = buildTransitSection(rec, r => {
+        const mo = parseInt(r.date.split('-')[1]);
+        return `${mo}월`;
+      }, null, '#e8920a');
+    })();
   }
 
   modal.style.display = 'block';
@@ -1592,6 +1617,12 @@ function buildYearlyReport(year) {
         return `<div style="background:#f3e8ff;border-radius:8px;padding:8px 14px;text-align:center;"><div style="font-size:10px;color:#7c3aed;font-weight:700;">🌟 Best Day</div><div style="font-size:14px;font-weight:900;">${label}</div><div style="font-size:11px;color:#7a7f99;">${bestDay[1].toLocaleString()}원</div></div>`;
       })()}
     </div>
+  </div>`;
+
+  // 02-1. 연간 교통비 (placeholder)
+  html += `<div style="${secS}">
+    ${sT('연간 교통비 내역')}
+    <div id="yearlyTransitBody" style="font-size:12px;color:#7a7f99;text-align:center;padding:10px;">불러오는 중...</div>
   </div>`;
 
   // 03. 계절별 패턴
