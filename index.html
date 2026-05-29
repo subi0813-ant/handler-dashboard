@@ -906,20 +906,91 @@ function openReport(type, targetDate) {
     // 연간 교통비 비동기 로딩
     (async () => {
       const data = await loadTransitData();
-      const rec = data.filter(r => r.date && r.date.startsWith(String(selectedYear)));
-      const el = document.getElementById('yearlyTransitBody');
-      if (!el) return;
-      if (rec.length === 0) { el.innerHTML = '<div style="color:#7a7f99;font-size:12px;padding:8px 0;">이 연도 교통비 내역이 없어요</div>'; return; }
-      // 월별 그룹
-      el.innerHTML = buildTransitSection(rec, r => {
-        const mo = parseInt(r.date.split('-')[1]);
-        return `${mo}월`;
-      }, null, '#e8920a');
+      window._yearlyTransitAll = data.filter(r => r.date && r.date.startsWith(String(selectedYear)));
+      const rec = window._yearlyTransitAll;
+      const sumEl = document.getElementById('yearlyTransitSummary');
+      const bodyEl = document.getElementById('yearlyTransitBody');
+      if (!sumEl || !bodyEl) return;
+      if (rec.length === 0) {
+        sumEl.innerHTML = '<div style="color:#7a7f99;font-size:12px;padding:8px 0;">이 연도 교통비 내역이 없어요</div>';
+        bodyEl.innerHTML = '';
+        return;
+      }
+      // 합계 + 수단별 뱃지만 표시 (buildTransitSection에서 바 제거)
+      const TC = {'버스':'#2b7fff','지하철':'#00a86b','기차':'#e8920a','기타':'#7c3aed'};
+      const total = rec.reduce((s,r)=>s+r.fare,0);
+      const byType = {'버스':{cnt:0,fare:0},'지하철':{cnt:0,fare:0},'기차':{cnt:0,fare:0},'기타':{cnt:0,fare:0}};
+      rec.forEach(r => { if(byType[r.type]) { byType[r.type].cnt++; byType[r.type].fare+=r.fare; }});
+      const types = ['버스','지하철','기차','기타'].filter(t=>byType[t].fare>0);
+      let sumHtml = `<div style="background:#f0f4ff;border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:12px;font-weight:700;color:#7a7f99;">연간 교통비 합계</div>
+        <div style="font-size:20px;font-weight:900;color:#e8920a;">${total.toLocaleString()}<span style="font-size:11px;color:#7a7f99;">원</span></div>
+      </div><div style="display:flex;gap:6px;flex-wrap:wrap;">`;
+      types.forEach(t => {
+        const d = byType[t];
+        const pct = total > 0 ? Math.round(d.fare/total*100) : 0;
+        sumHtml += `<div style="flex:1;min-width:60px;background:#fff;border:1px solid ${TC[t]}33;border-radius:8px;padding:8px 6px;text-align:center;">
+          <div style="font-size:10px;font-weight:700;color:${TC[t]};margin-bottom:2px;">${t}</div>
+          <div style="font-size:13px;font-weight:800;">${d.fare.toLocaleString()}</div>
+          <div style="font-size:10px;color:#7a7f99;">${d.cnt}건·${pct}%</div>
+        </div>`;
+      });
+      sumHtml += '</div>';
+      sumEl.innerHTML = sumHtml;
+      // 현재 분기 자동 선택
+      const curQ = Math.ceil((new Date().getMonth()+1)/3);
+      selectYearlyTransitQ(curQ);
     })();
   }
 
   modal.style.display = 'block';
   document.body.style.overflow = 'hidden';
+}
+
+// ── 연간 교통비 분기별 선택 ──────────────────
+function selectYearlyTransitQ(q) {
+  for (let i = 1; i <= 4; i++) {
+    const btn = document.getElementById('ytqBtn' + i);
+    if (!btn) continue;
+    if (i === q) { btn.style.background = '#1a1d2e'; btn.style.color = 'white'; btn.style.borderColor = '#1a1d2e'; }
+    else { btn.style.background = '#f0f1f5'; btn.style.color = '#7a7f99'; btn.style.borderColor = '#e0e0e0'; }
+  }
+  const rec = window._yearlyTransitAll || [];
+  const bodyEl = document.getElementById('yearlyTransitBody');
+  if (!bodyEl) return;
+  const QUARTER_MONTHS = {1:[1,2,3],2:[4,5,6],3:[7,8,9],4:[10,11,12]};
+  const months = QUARTER_MONTHS[q];
+  const qRec = rec.filter(r => { const mo = parseInt(r.date.split('-')[1]); return months.includes(mo); });
+  if (qRec.length === 0) { bodyEl.innerHTML = '<div style="color:#7a7f99;font-size:12px;padding:8px 0;text-align:center;">이 분기 교통비 내역이 없어요</div>'; return; }
+  const TC = {'버스':'#2b7fff','지하철':'#00a86b','기차':'#e8920a','기타':'#7c3aed'};
+  // 월별 스택 바
+  const grouped = {};
+  qRec.forEach(r => {
+    const mo = parseInt(r.date.split('-')[1]) + '월';
+    if (!grouped[mo]) grouped[mo] = {'버스':0,'지하철':0,'기차':0,'기타':0,total:0};
+    grouped[mo][r.type] = (grouped[mo][r.type]||0) + r.fare;
+    grouped[mo].total += r.fare;
+  });
+  const keys = Object.keys(grouped).sort((a,b) => parseInt(a)-parseInt(b));
+  const maxTotal = Math.max(...keys.map(k=>grouped[k].total), 1);
+  const types = ['버스','지하철','기차','기타'].filter(t => qRec.some(r=>r.type===t));
+  let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+  keys.forEach(key => {
+    const g = grouped[key];
+    let segs = '';
+    types.forEach(t => {
+      if (!g[t]) return;
+      const w = Math.round((g[t]/maxTotal)*100);
+      segs += `<div style="width:${w}%;height:100%;background:${TC[t]};"></div>`;
+    });
+    html += `<div style="display:flex;align-items:center;gap:8px;">
+      <div style="font-size:11px;font-weight:700;color:#7a7f99;width:32px;flex-shrink:0;text-align:right;">${key}</div>
+      <div style="flex:1;height:20px;background:#f0f1f5;border-radius:4px;overflow:hidden;display:flex;">${segs}</div>
+      <div style="font-size:11px;font-weight:700;color:#1a1d2e;width:62px;text-align:right;flex-shrink:0;">${g.total.toLocaleString()}원</div>
+    </div>`;
+  });
+  html += '</div>';
+  bodyEl.innerHTML = html;
 }
 
 function closeReport() {
@@ -1127,21 +1198,25 @@ function buildWeeklyReport(targetDate) {
       ${kpiBox('#00a86b','총 수입',total.toLocaleString(),'원',subRow('핸들러',hTotal.toLocaleString()+'원','#00a86b')+subRow('무버스',mTotal.toLocaleString()+'원','#2b7fff'))}
       ${kpiBox('#2b7fff','총 운행',weekRoutes.length,'건',subRow('핸들러',h.length+'건','#00a86b')+subRow('무버스',m.length+'건','#2b7fff'))}
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
       ${kpiBox('#e8920a','건당 평균',avg.toLocaleString(),'원/건',subRow('핸들러',h.length>0?Math.round(hTotal/h.length).toLocaleString()+'원':'—','#00a86b')+subRow('무버스',m.length>0?Math.round(mTotal/m.length).toLocaleString()+'원':'—','#2b7fff'))}
       ${kpiBox('#7c3aed','핸들러 비율',total>0?Math.round(hTotal/total*100):0,'%',subRow('무버스 비율',total>0?Math.round(mTotal/total*100)+'%':'—%','#7c3aed'))}
-      ${(()=>{
-        // Best Day 계산
-        const dayTotals = {};
-        weekRoutes.forEach(r => { if(r.date) dayTotals[r.date] = (dayTotals[r.date]||0) + r.fare; });
-        const bestDay = Object.entries(dayTotals).sort((a,b)=>b[1]-a[1])[0];
-        if (!bestDay) return kpiBox('#e05ce0','Best Day','—','',`<div style="font-size:10px;color:#7a7f99;margin-top:4px;">데이터 없음</div>`);
-        const bd = new Date(bestDay[0]);
-        const dayNames2 = ['일','월','화','수','목','금','토'];
-        const label = `${bd.getMonth()+1}/${bd.getDate()}(${dayNames2[bd.getDay()]})`;
-        return kpiBox('#e05ce0','🌟 Best Day',label,'',`<div style="font-size:11px;color:#7a7f99;margin-top:4px;">${bestDay[1].toLocaleString()}원</div>`);
-      })()}
     </div>
+    ${(()=>{
+      // Best Day 계산
+      const dayTotals = {};
+      weekRoutes.forEach(r => { if(r.date) dayTotals[r.date] = (dayTotals[r.date]||0) + r.fare; });
+      const bestDay = Object.entries(dayTotals).sort((a,b)=>b[1]-a[1])[0];
+      if (!bestDay) return `<div style="background:#f8f9fc;border-radius:12px;padding:12px 16px;border-left:3px solid #e05ce0;"><div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">🌟 Best Day</div><div style="font-size:16px;font-weight:900;color:#7a7f99;">데이터 없음</div></div>`;
+      const bdParts = bestDay[0].split('-').map(Number);
+      const bd = new Date(bdParts[0], bdParts[1]-1, bdParts[2]);
+      const dayNames2 = ['일','월','화','수','목','금','토'];
+      const label = `${bd.getMonth()+1}/${bd.getDate()}(${dayNames2[bd.getDay()]})`;
+      return `<div style="background:#f8f9fc;border-radius:12px;padding:12px 16px;border-left:3px solid #e05ce0;display:flex;justify-content:space-between;align-items:center;">
+        <div><div style="font-size:11px;color:#7a7f99;margin-bottom:2px;">🌟 Best Day</div><div style="font-size:20px;font-weight:900;">${label}</div></div>
+        <div style="text-align:right;"><div style="font-size:16px;font-weight:800;color:#e05ce0;">${bestDay[1].toLocaleString()}</div><div style="font-size:11px;color:#7a7f99;">원</div></div>
+      </div>`;
+    })()}
   </div>`;
 
   // 02. 전주 대비
@@ -1611,7 +1686,8 @@ function buildYearlyReport(year) {
         yRoutes.forEach(r => { if(r.date) dayTotals[r.date] = (dayTotals[r.date]||0) + r.fare; });
         const bestDay = Object.entries(dayTotals).sort((a,b)=>b[1]-a[1])[0];
         if (!bestDay) return '';
-        const bd = new Date(bestDay[0]);
+        const bdParts = bestDay[0].split('-').map(Number);
+        const bd = new Date(bdParts[0], bdParts[1]-1, bdParts[2]);
         const dayNames2 = ['일','월','화','수','목','금','토'];
         const label = `${bd.getMonth()+1}/${bd.getDate()}(${dayNames2[bd.getDay()]})`;
         return `<div style="background:#f3e8ff;border-radius:8px;padding:8px 14px;text-align:center;"><div style="font-size:10px;color:#7c3aed;font-weight:700;">🌟 Best Day</div><div style="font-size:14px;font-weight:900;">${label}</div><div style="font-size:11px;color:#7a7f99;">${bestDay[1].toLocaleString()}원</div></div>`;
@@ -1622,7 +1698,14 @@ function buildYearlyReport(year) {
   // 02-1. 연간 교통비 (placeholder)
   html += `<div style="${secS}">
     ${sT('연간 교통비 내역')}
-    <div id="yearlyTransitBody" style="font-size:12px;color:#7a7f99;text-align:center;padding:10px;">불러오는 중...</div>
+    <div id="yearlyTransitSummary" style="margin-bottom:12px;"><div style="font-size:12px;color:#7a7f99;text-align:center;padding:10px;">불러오는 중...</div></div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;">
+      <button onclick="selectYearlyTransitQ(1)" id="ytqBtn1" style="flex:1;padding:6px 0;font-size:11px;font-weight:700;border:1px solid #e0e0e0;border-radius:8px;background:#f0f1f5;color:#7a7f99;cursor:pointer;">Q1</button>
+      <button onclick="selectYearlyTransitQ(2)" id="ytqBtn2" style="flex:1;padding:6px 0;font-size:11px;font-weight:700;border:1px solid #e0e0e0;border-radius:8px;background:#f0f1f5;color:#7a7f99;cursor:pointer;">Q2</button>
+      <button onclick="selectYearlyTransitQ(3)" id="ytqBtn3" style="flex:1;padding:6px 0;font-size:11px;font-weight:700;border:1px solid #e0e0e0;border-radius:8px;background:#f0f1f5;color:#7a7f99;cursor:pointer;">Q3</button>
+      <button onclick="selectYearlyTransitQ(4)" id="ytqBtn4" style="flex:1;padding:6px 0;font-size:11px;font-weight:700;border:1px solid #e0e0e0;border-radius:8px;background:#f0f1f5;color:#7a7f99;cursor:pointer;">Q4</button>
+    </div>
+    <div id="yearlyTransitBody" style="font-size:12px;color:#7a7f99;text-align:center;padding:6px;">불러오는 중...</div>
   </div>`;
 
   // 03. 계절별 패턴
