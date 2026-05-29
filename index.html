@@ -1208,8 +1208,8 @@ function buildWeeklyReport(targetDate) {
       weekRoutes.forEach(r => { if(r.date) dayTotals[r.date] = (dayTotals[r.date]||0) + r.fare; });
       const bestDay = Object.entries(dayTotals).sort((a,b)=>b[1]-a[1])[0];
       if (!bestDay) return `<div style="background:#f8f9fc;border-radius:12px;padding:12px 16px;border-left:3px solid #e05ce0;"><div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">🌟 Best Day</div><div style="font-size:16px;font-weight:900;color:#7a7f99;">데이터 없음</div></div>`;
-      const bdParts = bestDay[0].split('-').map(Number);
-      const bd = new Date(bdParts[0], bdParts[1]-1, bdParts[2]);
+      const bd = parseRouteDate(bestDay[0], selectedYear);
+      if (!bd || isNaN(bd.getTime())) return `<div style="background:#f8f9fc;border-radius:12px;padding:12px 16px;border-left:3px solid #e05ce0;"><div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">🌟 Best Day</div><div style="font-size:16px;font-weight:900;color:#7a7f99;">날짜 오류</div></div>`;
       const dayNames2 = ['일','월','화','수','목','금','토'];
       const label = `${bd.getMonth()+1}/${bd.getDate()}(${dayNames2[bd.getDay()]})`;
       return `<div style="background:#f8f9fc;border-radius:12px;padding:12px 16px;border-left:3px solid #e05ce0;display:flex;justify-content:space-between;align-items:center;">
@@ -1686,8 +1686,8 @@ function buildYearlyReport(year) {
         yRoutes.forEach(r => { if(r.date) dayTotals[r.date] = (dayTotals[r.date]||0) + r.fare; });
         const bestDay = Object.entries(dayTotals).sort((a,b)=>b[1]-a[1])[0];
         if (!bestDay) return '';
-        const bdParts = bestDay[0].split('-').map(Number);
-        const bd = new Date(bdParts[0], bdParts[1]-1, bdParts[2]);
+        const bd = parseRouteDate(bestDay[0], year);
+        if (!bd || isNaN(bd.getTime())) return '';
         const dayNames2 = ['일','월','화','수','목','금','토'];
         const label = `${bd.getMonth()+1}/${bd.getDate()}(${dayNames2[bd.getDay()]})`;
         return `<div style="background:#f3e8ff;border-radius:8px;padding:8px 14px;text-align:center;"><div style="font-size:10px;color:#7c3aed;font-weight:700;">🌟 Best Day</div><div style="font-size:14px;font-weight:900;">${label}</div><div style="font-size:11px;color:#7a7f99;">${bestDay[1].toLocaleString()}원</div></div>`;
