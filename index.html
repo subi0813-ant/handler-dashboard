@@ -847,7 +847,7 @@ function openReport(type, targetDate) {
       });
       const el = document.getElementById('weeklyTransitBody');
       if (!el) return;
-      if (rec.length === 0) { el.innerHTML = '<div style="color:#7a7f99;font-size:12px;padding:8px 0;">이 주 교통비 내역이 없어요</div>'; return; }
+      if (rec.length === 0) { el.innerHTML = '<div style="color:#7a7f99;font-size:12px;padding:8px 0;">금주 교통비 내역이 없어요</div>'; return; }
       // 일별 그룹: MM/DD(요일)
       const dayNames = ['일','월','화','수','목','금','토'];
       el.innerHTML = buildTransitSection(rec, r => {
@@ -1169,6 +1169,9 @@ function buildWeeklyReport(targetDate) {
   const hTotal = h.reduce((s,x)=>s+x.fare,0);
   const mTotal = m.reduce((s,x)=>s+x.fare,0);
   const avg = weekRoutes.length > 0 ? Math.round(total/weekRoutes.length) : 0;
+  // 주간 운행일수 & 일 평균
+  const weekWorkDays = new Set(weekRoutes.map(r => r.date)).size;
+  const weekDayAvg = weekWorkDays > 0 ? Math.round(total / weekWorkDays) : 0;
 
   // 요일별 수입
   const dayNames = ['일','월','화','수','목','금','토'];
@@ -1199,7 +1202,7 @@ function buildWeeklyReport(targetDate) {
       ${kpiBox('#2b7fff','총 운행',weekRoutes.length,'건',subRow('핸들러',h.length+'건','#00a86b')+subRow('무버스',m.length+'건','#2b7fff'))}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-      ${kpiBox('#e8920a','건당 평균',avg.toLocaleString(),'원/건',subRow('핸들러',h.length>0?Math.round(hTotal/h.length).toLocaleString()+'원':'—','#00a86b')+subRow('무버스',m.length>0?Math.round(mTotal/m.length).toLocaleString()+'원':'—','#2b7fff'))}
+      ${kpiBox('#e8920a','건당 평균',avg.toLocaleString(),'원/건',subRow('핸들러',h.length>0?Math.round(hTotal/h.length).toLocaleString()+'원':'—','#00a86b')+subRow('무버스',m.length>0?Math.round(mTotal/m.length).toLocaleString()+'원':'—','#2b7fff')+subRow('일 평균('+weekWorkDays+'일)',weekDayAvg.toLocaleString()+'원','#e8920a'))}
       ${kpiBox('#7c3aed','핸들러 비율',total>0?Math.round(hTotal/total*100):0,'%',subRow('무버스 비율',total>0?Math.round(mTotal/total*100)+'%':'—%','#7c3aed'))}
     </div>
     ${(()=>{
@@ -1330,6 +1333,9 @@ function buildMonthlyReport(month, year) {
   const mTotal = m.reduce((s,x)=>s+x.fare,0);
   const dist   = mRoutes.reduce((s,x)=>s+(parseFloat(x.km)||0),0);
   const avg    = mRoutes.length > 0 ? Math.round(total/mRoutes.length) : 0;
+  // 월간 운행일수 & 일 평균
+  const monthWorkDays = new Set(mRoutes.map(r => r.date)).size;
+  const monthDayAvg = monthWorkDays > 0 ? Math.round(total / monthWorkDays) : 0;
   const hAvg   = h.length > 0 ? Math.round(hTotal/h.length) : 0;
   const mAvg   = m.length > 0 ? Math.round(mTotal/m.length) : 0;
 
@@ -1413,7 +1419,7 @@ function buildMonthlyReport(month, year) {
       <div style="background:#f8f9fc;border-radius:12px;padding:14px 16px;border-left:3px solid #e8920a;">
         <div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">총 주행거리</div>
         <div style="font-size:20px;font-weight:900;">${dist.toFixed(1)}<span style="font-size:12px;color:#7a7f99;margin-left:2px;">km</span></div>
-        <div style="margin-top:8px;">${subRow('건당 평균',avg.toLocaleString()+'원','#e8920a')}</div>
+        <div style="margin-top:8px;">${subRow('건당 평균',avg.toLocaleString()+'원','#e8920a')}${subRow('일 평균('+monthWorkDays+'일)',monthDayAvg.toLocaleString()+'원','#e8920a')}</div>
       </div>
       <div style="background:#f8f9fc;border-radius:12px;padding:14px 16px;border-left:3px solid ${goalColor};">
         <div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">목표 달성률</div>
@@ -1582,6 +1588,9 @@ function buildYearlyReport(year) {
   const total  = yRoutes.reduce((s,x)=>s+x.fare,0);
   const dist   = yRoutes.reduce((s,x)=>s+(parseFloat(x.km)||0),0);
   const avg    = yRoutes.length > 0 ? Math.round(total/yRoutes.length) : 0;
+  // 연간 운행일수 & 일 평균
+  const yearWorkDays = new Set(yRoutes.map(r => r.date)).size;
+  const yearDayAvg = yearWorkDays > 0 ? Math.round(total / yearWorkDays) : 0;
   const hRoutes = yRoutes.filter(x=>x.type==='핸들러');
   const mRoutes = yRoutes.filter(x=>x.type==='무버스');
   const hTotal = hRoutes.reduce((s,x)=>s+x.fare,0);
@@ -1650,7 +1659,7 @@ function buildYearlyReport(year) {
       <div style="background:#f8f9fc;border-radius:12px;padding:14px 16px;border-left:3px solid #2b7fff;">
         <div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">총 운행</div>
         <div style="font-size:18px;font-weight:900;">${yRoutes.length}<span style="font-size:11px;color:#7a7f99;margin-left:2px;">건</span></div>
-        <div style="margin-top:6px;">${subRow('건당 평균',avg.toLocaleString()+'원','#e8920a')}</div>
+        <div style="margin-top:6px;">${subRow('건당 평균',avg.toLocaleString()+'원','#e8920a')}${subRow('일 평균('+yearWorkDays+'일)',yearDayAvg.toLocaleString()+'원','#e8920a')}</div>
       </div>
       <div style="background:#f8f9fc;border-radius:12px;padding:14px 16px;border-left:3px solid #00a86b;">
         <div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">총 주행거리</div>
