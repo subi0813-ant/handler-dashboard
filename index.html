@@ -298,13 +298,17 @@ h1 em{color:var(--blue);font-style:normal;}
       <div class="stat-lbl">오늘 수입</div>
       <div class="stat-val-row"><span class="stat-val" id="d-today-fare" style="color:#00a86b;">—</span><span class="stat-unit">원</span><span style="font-size:12px;color:var(--muted);margin-left:8px;" id="d-today-count">— 건</span></div>
       <div class="stat-sub2"><span class="sub-label handler-color">핸들러</span><div class="sub-val"><span id="d-today-h">—</span><span class="stat-unit2">원</span></div><span class="sub-cnt" id="d-today-hc">— 건</span></div>
+      <div class="stat-sub2" id="d-today-h2-row"><span class="sub-label" style="color:#00c48c;">핸들러2</span><div class="sub-val"><span id="d-today-h2">—</span><span class="stat-unit2">원</span></div><span class="sub-cnt" id="d-today-h2c">— 건</span></div>
       <div class="stat-sub2"><span class="sub-label mover-color">무버스</span><div class="sub-val"><span id="d-today-m">—</span><span class="stat-unit2">원</span></div><span class="sub-cnt" id="d-today-mc">— 건</span></div>
+      <div class="stat-sub2" id="d-today-m2-row"><span class="sub-label" style="color:#5ba3ff;">무버스2</span><div class="sub-val"><span id="d-today-m2">—</span><span class="stat-unit2">원</span></div><span class="sub-cnt" id="d-today-m2c">— 건</span></div>
     </div>
     <div class="stat-card" style="border-color:#7a7f99;grid-column:span 2;">
       <div class="stat-lbl">어제 수입</div>
       <div class="stat-val-row"><span class="stat-val" id="d-yes-fare" style="color:#7a7f99;">—</span><span class="stat-unit">원</span><span style="font-size:12px;color:var(--muted);margin-left:8px;" id="d-yes-count">— 건</span></div>
       <div class="stat-sub2"><span class="sub-label handler-color">핸들러</span><div class="sub-val"><span id="d-yes-h">—</span><span class="stat-unit2">원</span></div><span class="sub-cnt" id="d-yes-hc">— 건</span></div>
+      <div class="stat-sub2" id="d-yes-h2-row"><span class="sub-label" style="color:#00c48c;">핸들러2</span><div class="sub-val"><span id="d-yes-h2">—</span><span class="stat-unit2">원</span></div><span class="sub-cnt" id="d-yes-h2c">— 건</span></div>
       <div class="stat-sub2"><span class="sub-label mover-color">무버스</span><div class="sub-val"><span id="d-yes-m">—</span><span class="stat-unit2">원</span></div><span class="sub-cnt" id="d-yes-mc">— 건</span></div>
+      <div class="stat-sub2" id="d-yes-m2-row"><span class="sub-label" style="color:#5ba3ff;">무버스2</span><div class="sub-val"><span id="d-yes-m2">—</span><span class="stat-unit2">원</span></div><span class="sub-cnt" id="d-yes-m2c">— 건</span></div>
     </div>
   </div>
 
@@ -313,7 +317,9 @@ h1 em{color:var(--blue);font-style:normal;}
       <div class="stat-lbl">총 수입</div>
       <div class="stat-val-row"><span class="stat-val" id="s-fare">—</span><span class="stat-unit">원</span></div>
       <div class="stat-sub2"><span class="sub-label handler-color">핸들러</span><div class="sub-val"><span id="s-fare-h">—</span><span class="stat-unit2">원</span></div></div>
+      <div class="stat-sub2" id="s-fare-h2-row"><span class="sub-label" style="color:#00c48c;">핸들러2</span><div class="sub-val"><span id="s-fare-h2">—</span><span class="stat-unit2">원</span></div></div>
       <div class="stat-sub2"><span class="sub-label mover-color">무버스</span><div class="sub-val"><span id="s-fare-m">—</span><span class="stat-unit2">원</span></div></div>
+      <div class="stat-sub2" id="s-fare-m2-row"><span class="sub-label" style="color:#5ba3ff;">무버스2</span><div class="sub-val"><span id="s-fare-m2">—</span><span class="stat-unit2">원</span></div></div>
       <!-- 전년도 -->
       <div id="prev-fare-box" style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);display:none;">
         <div style="font-size:10px;color:var(--muted);margin-bottom:3px;" id="prev-year-label-fare"></div>
@@ -324,7 +330,9 @@ h1 em{color:var(--blue);font-style:normal;}
       <div class="stat-lbl">총 운행</div>
       <div class="stat-val-row"><span class="stat-val" id="s-count">—</span><span class="stat-unit">건</span></div>
       <div class="stat-sub2"><span class="sub-label handler-color">핸들러</span><div class="sub-val"><span id="s-count-h">—</span><span class="stat-unit2">건</span></div></div>
+      <div class="stat-sub2" id="s-count-h2-row"><span class="sub-label" style="color:#00c48c;">핸들러2</span><div class="sub-val"><span id="s-count-h2">—</span><span class="stat-unit2">건</span></div></div>
       <div class="stat-sub2"><span class="sub-label mover-color">무버스</span><div class="sub-val"><span id="s-count-m">—</span><span class="stat-unit2">건</span></div></div>
+      <div class="stat-sub2" id="s-count-m2-row"><span class="sub-label" style="color:#5ba3ff;">무버스2</span><div class="sub-val"><span id="s-count-m2">—</span><span class="stat-unit2">건</span></div></div>
       <div id="prev-count-box" style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);display:none;">
         <div style="font-size:10px;color:var(--muted);margin-bottom:3px;" id="prev-year-label-count"></div>
         <div style="font-size:13px;font-weight:700;color:var(--muted);" id="prev-count">—</div>
@@ -334,7 +342,9 @@ h1 em{color:var(--blue);font-style:normal;}
       <div class="stat-lbl">총 주행</div>
       <div class="stat-val-row"><span class="stat-val" id="s-km">—</span><span class="stat-unit">km</span></div>
       <div class="stat-sub2"><span class="sub-label handler-color">핸들러</span><div class="sub-val"><span id="s-km-h">—</span><span class="stat-unit2">km</span></div></div>
+      <div class="stat-sub2" id="s-km-h2-row"><span class="sub-label" style="color:#00c48c;">핸들러2</span><div class="sub-val"><span id="s-km-h2">—</span><span class="stat-unit2">km</span></div></div>
       <div class="stat-sub2"><span class="sub-label mover-color">무버스</span><div class="sub-val"><span id="s-km-m">—</span><span class="stat-unit2">km</span></div></div>
+      <div class="stat-sub2" id="s-km-m2-row"><span class="sub-label" style="color:#5ba3ff;">무버스2</span><div class="sub-val"><span id="s-km-m2">—</span><span class="stat-unit2">km</span></div></div>
       <div id="prev-km-box" style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);display:none;">
         <div style="font-size:10px;color:var(--muted);margin-bottom:3px;" id="prev-year-label-km"></div>
         <div style="font-size:13px;font-weight:700;color:var(--muted);" id="prev-km">—</div>
@@ -621,7 +631,10 @@ function extractRoutesFromArray(rows, month, year) {
     const appVal  = iApp>=0  ? String(row[iApp] ||'').trim() : '';
     const noteVal = iNote>=0 ? String(row[iNote]||'').trim() : '';
     const typeRaw = appVal || noteVal;
-    const type = typeRaw === '무버스' ? '무버스' : '핸들러';
+    const type = typeRaw === '무버스' ? '무버스'
+             : typeRaw === '무버스2' ? '무버스2'
+             : typeRaw === '핸들러2' ? '핸들러2'
+             : '핸들러';
 
     routes.push({
       month,
@@ -1028,12 +1041,16 @@ function buildDailyReport(targetDate) {
       const d = parseRouteDate(r.date, targetYr);
       return d && toStr(d) === dateStr;
     });
-    const h = r.filter(x => x.type==='핸들러');
-    const m = r.filter(x => x.type==='무버스');
+    const h  = r.filter(x => x.type==='핸들러');
+    const h2 = r.filter(x => x.type==='핸들러2');
+    const m  = r.filter(x => x.type==='무버스');
+    const m2 = r.filter(x => x.type==='무버스2');
     return {
       total: r.reduce((s,x)=>s+x.fare,0), count:r.length,
-      hFare: h.reduce((s,x)=>s+x.fare,0), hCount:h.length,
-      mFare: m.reduce((s,x)=>s+x.fare,0), mCount:m.length,
+      hFare:  h.reduce((s,x)=>s+x.fare,0),  hCount:h.length,
+      h2Fare: h2.reduce((s,x)=>s+x.fare,0), h2Count:h2.length,
+      mFare:  m.reduce((s,x)=>s+x.fare,0),  mCount:m.length,
+      m2Fare: m2.reduce((s,x)=>s+x.fare,0), m2Count:m2.length,
       dist: r.reduce((s,x)=>s+(parseFloat(x.km)||0),0),
       routes: r
     };
@@ -1062,8 +1079,8 @@ function buildDailyReport(targetDate) {
   html += `<div style="${secStyle}">
     ${secTitle('오늘 실적')}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      ${kpiBox('#00a86b','총 수입',t.total.toLocaleString(),'원',subRow('핸들러',t.hFare.toLocaleString()+'원','#00a86b')+subRow('무버스',t.mFare.toLocaleString()+'원','#2b7fff'))}
-      ${kpiBox('#2b7fff','총 운행',t.count,'건',subRow('핸들러',t.hCount+'건','#00a86b')+subRow('무버스',t.mCount+'건','#2b7fff'))}
+      ${kpiBox('#00a86b','총 수입',t.total.toLocaleString(),'원',subRow('핸들러',t.hFare.toLocaleString()+'원','#00a86b')+subRow('핸들러2',t.h2Fare.toLocaleString()+'원','#00c48c')+subRow('무버스',t.mFare.toLocaleString()+'원','#2b7fff')+subRow('무버스2',t.m2Fare.toLocaleString()+'원','#5ba3ff'))}
+      ${kpiBox('#2b7fff','총 운행',t.count,'건',subRow('핸들러',t.hCount+'건','#00a86b')+subRow('핸들러2',t.h2Count+'건','#00c48c')+subRow('무버스',t.mCount+'건','#2b7fff')+subRow('무버스2',t.m2Count+'건','#5ba3ff'))}
       ${kpiBox('#e8920a','총 주행거리',t.dist.toFixed(1),'km',subRow('건당 평균',avg.toLocaleString()+'원','#e8920a'))}
     </div>
   </div>`;
@@ -1163,11 +1180,15 @@ function buildWeeklyReport(targetDate) {
   const pCount = prevWeekRoutes.length;
   const pAvg   = pCount>0?Math.round(pTotal/pCount):0;
 
-  const h = weekRoutes.filter(x=>x.type==='핸들러');
-  const m = weekRoutes.filter(x=>x.type==='무버스');
+  const h  = weekRoutes.filter(x=>x.type==='핸들러');
+  const h2 = weekRoutes.filter(x=>x.type==='핸들러2');
+  const m  = weekRoutes.filter(x=>x.type==='무버스');
+  const m2 = weekRoutes.filter(x=>x.type==='무버스2');
   const total = weekRoutes.reduce((s,x)=>s+x.fare,0);
-  const hTotal = h.reduce((s,x)=>s+x.fare,0);
-  const mTotal = m.reduce((s,x)=>s+x.fare,0);
+  const hTotal  = h.reduce((s,x)=>s+x.fare,0);
+  const h2Total = h2.reduce((s,x)=>s+x.fare,0);
+  const mTotal  = m.reduce((s,x)=>s+x.fare,0);
+  const m2Total = m2.reduce((s,x)=>s+x.fare,0);
   const avg = weekRoutes.length > 0 ? Math.round(total/weekRoutes.length) : 0;
   // 주간 운행일수 & 일 평균
   const weekWorkDays = new Set(weekRoutes.map(r => r.date)).size;
@@ -1198,8 +1219,8 @@ function buildWeeklyReport(targetDate) {
   html += `<div style="${secStyle}">
     ${secTitle('이번 주 실적')}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-      ${kpiBox('#00a86b','총 수입',total.toLocaleString(),'원',subRow('핸들러',hTotal.toLocaleString()+'원','#00a86b')+subRow('무버스',mTotal.toLocaleString()+'원','#2b7fff'))}
-      ${kpiBox('#2b7fff','총 운행',weekRoutes.length,'건',subRow('핸들러',h.length+'건','#00a86b')+subRow('무버스',m.length+'건','#2b7fff'))}
+      ${kpiBox('#00a86b','총 수입',total.toLocaleString(),'원',subRow('핸들러',hTotal.toLocaleString()+'원','#00a86b')+subRow('핸들러2',h2Total.toLocaleString()+'원','#00c48c')+subRow('무버스',mTotal.toLocaleString()+'원','#2b7fff')+subRow('무버스2',m2Total.toLocaleString()+'원','#5ba3ff'))}
+      ${kpiBox('#2b7fff','총 운행',weekRoutes.length,'건',subRow('핸들러',h.length+'건','#00a86b')+subRow('핸들러2',h2.length+'건','#00c48c')+subRow('무버스',m.length+'건','#2b7fff')+subRow('무버스2',m2.length+'건','#5ba3ff'))}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
       ${kpiBox('#e8920a','건당 평균',avg.toLocaleString(),'원/건',subRow('핸들러',h.length>0?Math.round(hTotal/h.length).toLocaleString()+'원':'—','#00a86b')+subRow('무버스',m.length>0?Math.round(mTotal/m.length).toLocaleString()+'원':'—','#2b7fff')+subRow('일 평균('+weekWorkDays+'일)',weekDayAvg.toLocaleString()+'원','#e8920a'))}
@@ -1327,10 +1348,14 @@ function buildMonthlyReport(month, year) {
   const pRoutes   = allRoutesGlobal.filter(r => r.month === prevStr && (r.year || new Date().getFullYear()) === prevYear);
 
   const h  = mRoutes.filter(x=>x.type==='핸들러');
+  const h2 = mRoutes.filter(x=>x.type==='핸들러2');
   const m  = mRoutes.filter(x=>x.type==='무버스');
+  const m2 = mRoutes.filter(x=>x.type==='무버스2');
   const total  = mRoutes.reduce((s,x)=>s+x.fare,0);
-  const hTotal = h.reduce((s,x)=>s+x.fare,0);
-  const mTotal = m.reduce((s,x)=>s+x.fare,0);
+  const hTotal  = h.reduce((s,x)=>s+x.fare,0);
+  const h2Total = h2.reduce((s,x)=>s+x.fare,0);
+  const mTotal  = m.reduce((s,x)=>s+x.fare,0);
+  const m2Total = m2.reduce((s,x)=>s+x.fare,0);
   const dist   = mRoutes.reduce((s,x)=>s+(parseFloat(x.km)||0),0);
   const avg    = mRoutes.length > 0 ? Math.round(total/mRoutes.length) : 0;
   // 월간 운행일수 & 일 평균
@@ -1409,12 +1434,12 @@ function buildMonthlyReport(month, year) {
       <div style="background:#f8f9fc;border-radius:12px;padding:14px 16px;border-left:3px solid #00a86b;">
         <div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">총 수입</div>
         <div style="font-size:20px;font-weight:900;">${total.toLocaleString()}<span style="font-size:12px;color:#7a7f99;margin-left:2px;">원</span></div>
-        <div style="margin-top:8px;">${subRow('핸들러',hTotal.toLocaleString()+'원','#00a86b')}${subRow('무버스',mTotal.toLocaleString()+'원','#2b7fff')}</div>
+        <div style="margin-top:8px;">${subRow('핸들러',hTotal.toLocaleString()+'원','#00a86b')}${subRow('핸들러2',h2Total.toLocaleString()+'원','#00c48c')}${subRow('무버스',mTotal.toLocaleString()+'원','#2b7fff')}${subRow('무버스2',m2Total.toLocaleString()+'원','#5ba3ff')}</div>
       </div>
       <div style="background:#f8f9fc;border-radius:12px;padding:14px 16px;border-left:3px solid #2b7fff;">
         <div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">총 운행</div>
         <div style="font-size:20px;font-weight:900;">${mRoutes.length}<span style="font-size:12px;color:#7a7f99;margin-left:2px;">건</span></div>
-        <div style="margin-top:8px;">${subRow('핸들러',h.length+'건','#00a86b')}${subRow('무버스',m.length+'건','#2b7fff')}</div>
+        <div style="margin-top:8px;">${subRow('핸들러',h.length+'건','#00a86b')}${subRow('핸들러2',h2.length+'건','#00c48c')}${subRow('무버스',m.length+'건','#2b7fff')}${subRow('무버스2',m2.length+'건','#5ba3ff')}</div>
       </div>
       <div style="background:#f8f9fc;border-radius:12px;padding:14px 16px;border-left:3px solid #e8920a;">
         <div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">총 주행거리</div>
@@ -1591,9 +1616,13 @@ function buildYearlyReport(year) {
   // 연간 운행일수 & 일 평균
   const yearWorkDays = new Set(yRoutes.map(r => r.date)).size;
   const yearDayAvg = yearWorkDays > 0 ? Math.round(total / yearWorkDays) : 0;
-  const hRoutes = yRoutes.filter(x=>x.type==='핸들러');
+  const hRoutes  = yRoutes.filter(x=>x.type==='핸들러');
+  const h2Routes = yRoutes.filter(x=>x.type==='핸들러2');
+  const mRoutes2 = yRoutes.filter(x=>x.type==='무버스2');
   const mRoutes = yRoutes.filter(x=>x.type==='무버스');
-  const hTotal = hRoutes.reduce((s,x)=>s+x.fare,0);
+  const hTotal  = hRoutes.reduce((s,x)=>s+x.fare,0);
+  const h2Total = h2Routes.reduce((s,x)=>s+x.fare,0);
+  const m2Total = mRoutes2.reduce((s,x)=>s+x.fare,0);
   const mTotal = mRoutes.reduce((s,x)=>s+x.fare,0);
   const hPct   = total>0?Math.round(hTotal/total*100):0;
 
@@ -1654,7 +1683,7 @@ function buildYearlyReport(year) {
       <div style="background:#f8f9fc;border-radius:12px;padding:14px 16px;border-left:3px solid #e8920a;">
         <div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">총 수입</div>
         <div style="font-size:18px;font-weight:900;">${total.toLocaleString()}<span style="font-size:11px;color:#7a7f99;margin-left:2px;">원</span></div>
-        <div style="margin-top:6px;">${subRow('핸들러',hTotal.toLocaleString()+'원','#00a86b')}${subRow('무버스',mTotal.toLocaleString()+'원','#2b7fff')}</div>
+        <div style="margin-top:6px;">${subRow('핸들러',hTotal.toLocaleString()+'원','#00a86b')}${subRow('핸들러2',h2Total.toLocaleString()+'원','#00c48c')}${subRow('무버스',mTotal.toLocaleString()+'원','#2b7fff')}${subRow('무버스2',m2Total.toLocaleString()+'원','#5ba3ff')}</div>
       </div>
       <div style="background:#f8f9fc;border-radius:12px;padding:14px 16px;border-left:3px solid #2b7fff;">
         <div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">총 운행</div>
@@ -1891,13 +1920,17 @@ function renderDailyStats(routes) {
       if (!d) return false;
       return toStr(d) === dateStr;
     });
-    const h = r.filter(x => x.type === '핸들러');
-    const m = r.filter(x => x.type === '무버스');
+    const h  = r.filter(x => x.type === '핸들러');
+    const h2 = r.filter(x => x.type === '핸들러2');
+    const m  = r.filter(x => x.type === '무버스');
+    const m2 = r.filter(x => x.type === '무버스2');
     return {
       total: r.reduce((s,x)=>s+x.fare,0),
       count: r.length,
-      hFare: h.reduce((s,x)=>s+x.fare,0), hCount: h.length,
-      mFare: m.reduce((s,x)=>s+x.fare,0), mCount: m.length,
+      hFare: h.reduce((s,x)=>s+x.fare,0),   hCount: h.length,
+      h2Fare: h2.reduce((s,x)=>s+x.fare,0), h2Count: h2.length,
+      mFare: m.reduce((s,x)=>s+x.fare,0),   mCount: m.length,
+      m2Fare: m2.reduce((s,x)=>s+x.fare,0), m2Count: m2.length,
     };
   }
 
@@ -1908,15 +1941,34 @@ function renderDailyStats(routes) {
   document.getElementById('d-today-count').textContent = `${t.count} 건`;
   document.getElementById('d-today-h').textContent = t.hFare > 0 ? t.hFare.toLocaleString() : '0';
   document.getElementById('d-today-hc').textContent = `${t.hCount} 건`;
+  setSubRow2('d-today-h2', t.h2Fare, t.h2Count, '원');
   document.getElementById('d-today-m').textContent = t.mFare > 0 ? t.mFare.toLocaleString() : '0';
   document.getElementById('d-today-mc').textContent = `${t.mCount} 건`;
+  setSubRow2('d-today-m2', t.m2Fare, t.m2Count, '원');
 
   document.getElementById('d-yes-fare').textContent = y.total > 0 ? y.total.toLocaleString() : '0';
   document.getElementById('d-yes-count').textContent = `${y.count} 건`;
   document.getElementById('d-yes-h').textContent = y.hFare > 0 ? y.hFare.toLocaleString() : '0';
   document.getElementById('d-yes-hc').textContent = `${y.hCount} 건`;
+  setSubRow2('d-yes-h2', y.h2Fare, y.h2Count, '원');
   document.getElementById('d-yes-m').textContent = y.mFare > 0 ? y.mFare.toLocaleString() : '0';
   document.getElementById('d-yes-mc').textContent = `${y.mCount} 건`;
+  setSubRow2('d-yes-m2', y.m2Fare, y.m2Count, '원');
+}
+
+// 핸들러2/무버스2 행 표시 헬퍼 (항상 표시)
+function setSubRow2(id, val, cnt, unit) {
+  const el = document.getElementById(id);
+  const row = document.getElementById(id + '-row');
+  if (!el || !row) return;
+  row.style.display = '';
+  if (unit === 'km') el.textContent = typeof val === 'number' ? val.toFixed(1) : '0';
+  else if (unit === '건') el.textContent = val || 0;
+  else el.textContent = typeof val === 'number' ? val.toLocaleString() : '0';
+  if (cnt !== null) {
+    const cntEl = document.getElementById(id + 'c');
+    if (cntEl) cntEl.textContent = `${cnt || 0} 건`;
+  }
 }
 
 function renderStats(routes) {
@@ -1927,16 +1979,26 @@ function renderStats(routes) {
   document.getElementById('s-km').textContent=totalKm.toFixed(1);
   document.getElementById('s-avg').textContent=routes.length?Math.round(total/routes.length).toLocaleString():'—';
 
-  const h=routes.filter(r=>r.type==='핸들러');
-  const m=routes.filter(r=>r.type==='무버스');
-  const hFare=h.reduce((s,r)=>s+r.fare,0), mFare=m.reduce((s,r)=>s+r.fare,0);
+  const h =routes.filter(r=>r.type==='핸들러');
+  const h2=routes.filter(r=>r.type==='핸들러2');
+  const m =routes.filter(r=>r.type==='무버스');
+  const m2=routes.filter(r=>r.type==='무버스2');
+  const hFare=h.reduce((s,r)=>s+r.fare,0),  mFare=m.reduce((s,r)=>s+r.fare,0);
+  const h2Fare=h2.reduce((s,r)=>s+r.fare,0), m2Fare=m2.reduce((s,r)=>s+r.fare,0);
   const hKm=h.reduce((s,r)=>s+r.km,0),   mKm=m.reduce((s,r)=>s+r.km,0);
+  const h2Km=h2.reduce((s,r)=>s+r.km,0), m2Km=m2.reduce((s,r)=>s+r.km,0);
   document.getElementById('s-fare-h').textContent=hFare.toLocaleString();
+  setSubRow2('s-fare-h2', h2Fare, null, '원');
   document.getElementById('s-fare-m').textContent=mFare.toLocaleString();
+  setSubRow2('s-fare-m2', m2Fare, null, '원');
   document.getElementById('s-count-h').textContent=h.length;
+  setSubRow2('s-count-h2', h2.length, null, '건');
   document.getElementById('s-count-m').textContent=m.length;
+  setSubRow2('s-count-m2', m2.length, null, '건');
   document.getElementById('s-km-h').textContent=hKm.toFixed(1);
+  setSubRow2('s-km-h2', h2Km, null, 'km');
   document.getElementById('s-km-m').textContent=mKm.toFixed(1);
+  setSubRow2('s-km-m2', m2Km, null, 'km');
   document.getElementById('s-avg-h').textContent=h.length?Math.round(hFare/h.length).toLocaleString():'—';
   document.getElementById('s-avg-m').textContent=m.length?Math.round(mFare/m.length).toLocaleString():'—';
 }
