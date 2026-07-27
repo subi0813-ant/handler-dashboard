@@ -684,7 +684,7 @@ function loadTransitData() {
       delete window[cb];
       if (document.head.contains(script)) document.head.removeChild(script);
       const rows = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
-      transitDataGlobal = rows.filter(r => r && r.date && ['버스','지하철','기차','기타'].includes(r.type))
+      transitDataGlobal = rows.filter(r => r && r.date && ['버스','지하철','기차','지쿠'].includes(r.type))
         .map(r => ({ date: r.date, type: r.type, fare: parseInt(r.fare)||0, from: r.from||'', to: r.to||'' }));
       console.log('[핸들러] 교통비 데이터 로드 완료:', transitDataGlobal.length, '건');
       resolve(transitDataGlobal);
@@ -700,23 +700,23 @@ function loadTransitData() {
 
 // 교통비 섹션 HTML 생성 헬퍼
 function buildTransitSection(records, groupBy, secTitleFn, accentColor) {
-  const TC = {'버스':'#2b7fff','지하철':'#00a86b','기차':'#e8920a','기타':'#7c3aed'};
+  const TC = {'버스':'#2b7fff','지하철':'#00a86b','기차':'#e8920a','지쿠':'#e03e3e'};
   const total = records.reduce((s,r)=>s+r.fare,0);
-  const byType = {'버스':{cnt:0,fare:0},'지하철':{cnt:0,fare:0},'기차':{cnt:0,fare:0},'기타':{cnt:0,fare:0}};
+  const byType = {'버스':{cnt:0,fare:0},'지하철':{cnt:0,fare:0},'기차':{cnt:0,fare:0},'지쿠':{cnt:0,fare:0}};
   records.forEach(r => { if(byType[r.type]) { byType[r.type].cnt++; byType[r.type].fare+=r.fare; } });
 
   // 그룹별 상세 집계
   const grouped = {};
   records.forEach(r => {
     const key = groupBy(r);
-    if (!grouped[key]) grouped[key] = {'버스':0,'지하철':0,'기차':0,'기타':0,total:0,cnt:0};
+    if (!grouped[key]) grouped[key] = {'버스':0,'지하철':0,'기차':0,'지쿠':0,total:0,cnt:0};
     grouped[key][r.type] += r.fare;
     grouped[key].total   += r.fare;
     grouped[key].cnt++;
   });
   const groupKeys = Object.keys(grouped).sort();
   const maxGroup  = Math.max(...groupKeys.map(k=>grouped[k].total), 1);
-  const types     = ['버스','지하철','기차','기타'].filter(t=>byType[t].fare>0);
+  const types     = ['버스','지하철','기차','지쿠'].filter(t=>byType[t].fare>0);
 
   let html = `<div style="background:#f0f4ff;border-radius:10px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
     <div style="font-size:12px;font-weight:700;color:#7a7f99;">교통비 합계</div>
@@ -930,11 +930,11 @@ function openReport(type, targetDate) {
         return;
       }
       // 합계 + 수단별 뱃지만 표시 (buildTransitSection에서 바 제거)
-      const TC = {'버스':'#2b7fff','지하철':'#00a86b','기차':'#e8920a','기타':'#7c3aed'};
+      const TC = {'버스':'#2b7fff','지하철':'#00a86b','기차':'#e8920a','지쿠':'#e03e3e'};
       const total = rec.reduce((s,r)=>s+r.fare,0);
-      const byType = {'버스':{cnt:0,fare:0},'지하철':{cnt:0,fare:0},'기차':{cnt:0,fare:0},'기타':{cnt:0,fare:0}};
+      const byType = {'버스':{cnt:0,fare:0},'지하철':{cnt:0,fare:0},'기차':{cnt:0,fare:0},'지쿠':{cnt:0,fare:0}};
       rec.forEach(r => { if(byType[r.type]) { byType[r.type].cnt++; byType[r.type].fare+=r.fare; }});
-      const types = ['버스','지하철','기차','기타'].filter(t=>byType[t].fare>0);
+      const types = ['버스','지하철','기차','지쿠'].filter(t=>byType[t].fare>0);
       let sumHtml = `<div style="background:#f0f4ff;border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
         <div style="font-size:12px;font-weight:700;color:#7a7f99;">연간 교통비 합계</div>
         <div style="font-size:20px;font-weight:900;color:#e8920a;">${total.toLocaleString()}<span style="font-size:11px;color:#7a7f99;">원</span></div>
@@ -975,18 +975,18 @@ function selectYearlyTransitQ(q) {
   const months = QUARTER_MONTHS[q];
   const qRec = rec.filter(r => { const mo = parseInt(r.date.split('-')[1]); return months.includes(mo); });
   if (qRec.length === 0) { bodyEl.innerHTML = '<div style="color:#7a7f99;font-size:12px;padding:8px 0;text-align:center;">이 분기 교통비 내역이 없어요</div>'; return; }
-  const TC = {'버스':'#2b7fff','지하철':'#00a86b','기차':'#e8920a','기타':'#7c3aed'};
+  const TC = {'버스':'#2b7fff','지하철':'#00a86b','기차':'#e8920a','지쿠':'#e03e3e'};
   // 월별 스택 바
   const grouped = {};
   qRec.forEach(r => {
     const mo = parseInt(r.date.split('-')[1]) + '월';
-    if (!grouped[mo]) grouped[mo] = {'버스':0,'지하철':0,'기차':0,'기타':0,total:0};
+    if (!grouped[mo]) grouped[mo] = {'버스':0,'지하철':0,'기차':0,'지쿠':0,total:0};
     grouped[mo][r.type] = (grouped[mo][r.type]||0) + r.fare;
     grouped[mo].total += r.fare;
   });
   const keys = Object.keys(grouped).sort((a,b) => parseInt(a)-parseInt(b));
   const maxTotal = Math.max(...keys.map(k=>grouped[k].total), 1);
-  const types = ['버스','지하철','기차','기타'].filter(t => qRec.some(r=>r.type===t));
+  const types = ['버스','지하철','기차','지쿠'].filter(t => qRec.some(r=>r.type===t));
   let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
   keys.forEach(key => {
     const g = grouped[key];
@@ -1222,8 +1222,9 @@ function buildWeeklyReport(targetDate) {
       ${kpiBox('#00a86b','총 수입',total.toLocaleString(),'원',subRow('핸들러',hTotal.toLocaleString()+'원','#00a86b')+subRow('핸들러2',h2Total.toLocaleString()+'원','#00c48c')+subRow('무버스',mTotal.toLocaleString()+'원','#2b7fff')+subRow('무버스2',m2Total.toLocaleString()+'원','#5ba3ff'))}
       ${kpiBox('#2b7fff','총 운행',weekRoutes.length,'건',subRow('핸들러',h.length+'건','#00a86b')+subRow('핸들러2',h2.length+'건','#00c48c')+subRow('무버스',m.length+'건','#2b7fff')+subRow('무버스2',m2.length+'건','#5ba3ff'))}
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-      ${kpiBox('#e8920a','건당 평균',avg.toLocaleString(),'원/건',subRow('핸들러',h.length>0?Math.round(hTotal/h.length).toLocaleString()+'원':'—','#00a86b')+subRow('무버스',m.length>0?Math.round(mTotal/m.length).toLocaleString()+'원':'—','#2b7fff')+subRow('일 평균('+weekWorkDays+'일)',weekDayAvg.toLocaleString()+'원','#e8920a'))}
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+      ${kpiBox('#e8920a','일 평균',weekDayAvg.toLocaleString(),'원',subRow('운행일수',weekWorkDays+'일','#e8920a'))}
+      ${kpiBox('#e8920a','건당 평균',avg.toLocaleString(),'원/건',subRow('핸들러',h.length>0?Math.round(hTotal/h.length).toLocaleString()+'원':'—','#00a86b')+subRow('무버스',m.length>0?Math.round(mTotal/m.length).toLocaleString()+'원':'—','#2b7fff'))}
       ${kpiBox('#7c3aed','핸들러 비율',total>0?Math.round(hTotal/total*100):0,'%',subRow('무버스 비율',total>0?Math.round(mTotal/total*100)+'%':'—%','#7c3aed'))}
     </div>
     ${(()=>{
@@ -1444,7 +1445,6 @@ function buildMonthlyReport(month, year) {
       <div style="background:#f8f9fc;border-radius:12px;padding:14px 16px;border-left:3px solid #e8920a;">
         <div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">총 주행거리</div>
         <div style="font-size:20px;font-weight:900;">${dist.toFixed(1)}<span style="font-size:12px;color:#7a7f99;margin-left:2px;">km</span></div>
-        <div style="margin-top:8px;">${subRow('건당 평균',avg.toLocaleString()+'원','#e8920a')}${subRow('일 평균('+monthWorkDays+'일)',monthDayAvg.toLocaleString()+'원','#e8920a')}</div>
       </div>
       <div style="background:#f8f9fc;border-radius:12px;padding:14px 16px;border-left:3px solid ${goalColor};">
         <div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">목표 달성률</div>
@@ -1453,6 +1453,16 @@ function buildMonthlyReport(month, year) {
           <div style="width:${Math.min(goalPct,100)}%;height:100%;background:${goalColor};border-radius:4px;"></div>
         </div>
         <div style="font-size:11px;color:#7a7f99;margin-top:4px;">목표: ${goal.toLocaleString()}원 (평일 ${weekdays}일)</div>
+      </div>
+      <div style="background:#f8f9fc;border-radius:12px;padding:14px 16px;border-left:3px solid #e8920a;">
+        <div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">일 평균</div>
+        <div style="font-size:20px;font-weight:900;">${monthDayAvg.toLocaleString()}<span style="font-size:12px;color:#7a7f99;margin-left:2px;">원</span></div>
+        <div style="margin-top:8px;">${subRow('운행일수',monthWorkDays+'일','#e8920a')}</div>
+      </div>
+      <div style="background:#f8f9fc;border-radius:12px;padding:14px 16px;border-left:3px solid #e8920a;">
+        <div style="font-size:11px;color:#7a7f99;margin-bottom:4px;">건당 평균</div>
+        <div style="font-size:20px;font-weight:900;">${avg.toLocaleString()}<span style="font-size:12px;color:#7a7f99;margin-left:2px;">원/건</span></div>
+        <div style="margin-top:8px;">${subRow('핸들러',hAvg.toLocaleString()+'원','#00a86b')}${subRow('무버스',mAvg.toLocaleString()+'원','#2b7fff')}</div>
       </div>
     </div>
   </div>`;
